@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>七年级数学测验（离线版）</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #222;
+}
+.page { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 22px; margin: 8px 0 4px; }
+.subtitle { color: #777; font-size: 14px; margin: 0 0 20px; }
+.back-link { display: inline-block; color: #3a6df0; text-decoration: none; font-size: 14px; margin-bottom: 12px; background: none; border: none; padding: 0; cursor: pointer; }
+.chapter-list { display: flex; flex-direction: column; gap: 12px; }
+.chapter-card {
+    display: flex; justify-content: space-between; align-items: center;
+    background: white; border-radius: 12px; padding: 18px 20px;
+    text-decoration: none; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: none; width: 100%; font-size: 16px; text-align: left; cursor: pointer;
+}
+.chapter-title { font-size: 16px; font-weight: 600; }
+.arrow { color: #bbb; font-size: 20px; }
+.question-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid transparent;
+}
+.question-card.correct { border-left-color: #2ecc71; background: #f3fdf6; }
+.question-card.wrong { border-left-color: #e74c3c; background: #fdf3f3; }
+.question-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.q-index { font-size: 13px; color: #999; }
+.q-tag { font-size: 12px; color: #3a6df0; background: #eaf0ff; padding: 2px 8px; border-radius: 10px; }
+.q-stem { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f7f8fa; border-radius: 8px; font-size: 14px; }
+.option input { width: 18px; height: 18px; }
+.fill-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.feedback { margin-top: 10px; font-size: 13px; line-height: 1.6; }
+.fb-line { font-weight: 600; margin-bottom: 4px; }
+.fb-explain { color: #666; }
+#submit-btn {
+    display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+    color: white; background: #3a6df0; border: none; border-radius: 10px; margin-top: 10px;
+}
+#submit-btn:disabled { background: #aaa; }
+.score-panel { text-align: center; background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.score-number { font-size: 36px; font-weight: 700; color: #3a6df0; }
+.score-detail { color: #666; margin: 8px 0 16px; }
+#home-view, #quiz-view { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div id="home-view">
+    <h1>七年级上册数学测验</h1>
+    <p class="subtitle">北师大版 · 选一章开始做题（离线版，无需网络）</p>
+    <div class="chapter-list" id="chapter-list"></div>
+</div>
+
+<div id="quiz-view">
+    <button class="back-link" onclick="showHome()">‹ 返回选章节</button>
+    <h1 id="quiz-title"></h1>
+    <p class="subtitle" id="quiz-subtitle"></p>
+    <form id="quiz-form"></form>
+    <button type="button" id="submit-btn">交卷</button>
+    <div id="score-panel" class="score-panel" style="display:none;">
+        <div class="score-number"></div>
+        <div class="score-detail"></div>
+        <button class="back-link" onclick="showHome()">‹ 返回选章节，测下一章</button>
+    </div>
+</div>
+
+</div>
+
+<script>
+const DATA = {"chapters": [{"id": "ch3", "title": "第三章 整式及其加减"}, {"id": "ch4", "title": "第四章 基本平面图形"}, {"id": "ch5", "title": "第五章 一元一次方程"}, {"id": "ch6", "title": "第六章 数据的收集与整理"}], "questions": {"ch3": [{"id": 1, "type": "choice", "point": "单项式的系数与次数", "stem": "单项式 -3x²y 的系数和次数分别是（　）", "options": ["A. 3，3", "B. -3，3", "C. -3，2", "D. 3，2"], "answer": "B", "explain": "系数是字母前的数（含符号）：-3；次数是所有字母指数之和：2+1=3。"}, {"id": 2, "type": "choice", "point": "单项式的系数与次数", "stem": "单项式 πr² 的系数是（　）", "options": ["A. π", "B. 1", "C. πr", "D. 无系数"], "answer": "A", "explain": "π 是常数，是系数的一部分，容易被误认为不算系数，要注意 π 本身当作数字看待。"}, {"id": 3, "type": "judge", "point": "多项式的次数", "stem": "多项式 3x²y - 2xy³ + 5 是五次多项式。", "answer": "错", "explain": "多项式的次数取各项中最高的次数：-2xy³ 的次数是1+3=4，3x²y是2+1=3，最高次数是4，不是5。"}, {"id": 4, "type": "choice", "point": "同类项的判断", "stem": "下列各组中，属于同类项的是（　）", "options": ["A. 2x²y 与 2xy²", "B. 3ab 与 3a²b", "C. -5m²n 与 7nm²", "D. 4x 与 4x²"], "answer": "C", "explain": "同类项要求所含字母相同，且相同字母的指数也相同，与系数、顺序无关。m²n 与 nm² 字母相同、指数相同（m是2次，n是1次），故是同类项。"}, {"id": 5, "type": "fill", "point": "合并同类项", "stem": "合并同类项：3a - 5b + 2a - b = ______", "answer": ["5a-6b", "5a - 6b"], "explain": "同类项系数相加减，字母部分不变：(3+2)a + (-5-1)b = 5a - 6b。"}, {"id": 6, "type": "choice", "point": "合并同类项（易错-符号）", "stem": "化简 5x² - 3x² + x² 的结果是（　）", "options": ["A. x²", "B. 3x²", "C. 2x²", "D. 9x²"], "answer": "B", "explain": "5-3+1=3，结果是 3x²，容易漏加最后一个单独的 x²（系数其实是1）。"}, {"id": 7, "type": "choice", "point": "去括号法则", "stem": "去括号：a - (b - c + d) = （　）", "options": ["A. a - b - c + d", "B. a - b + c - d", "C. a - b + c + d", "D. a + b - c + d"], "answer": "B", "explain": "括号前是负号，去括号后括号内每一项都变号：-b、+c、-d。"}, {"id": 8, "type": "judge", "point": "去括号法则（易错点）", "stem": "去括号：-(2x - 3y) = -2x - 3y。", "answer": "错", "explain": "括号前负号，里面每项变号：-(2x-3y) = -2x+3y，而不是 -2x-3y，这是最常见的符号错误。"}, {"id": 9, "type": "fill", "point": "整式的加减", "stem": "计算：(2x²+3x-1) - (x²-2x+4) = ______", "answer": ["x^2+5x-5", "x²+5x-5", "x2+5x-5"], "explain": "先去括号：2x²+3x-1-x²+2x-4，再合并同类项：(2-1)x²+(3+2)x+(-1-4) = x²+5x-5。"}, {"id": 10, "type": "choice", "point": "整式加减的应用（列式）", "stem": "比多项式 A 与 3x²-2x 的和为 5x²-x，则 A 为（　）", "options": ["A. 2x²+x", "B. 2x²-x", "C. 8x²-3x", "D. -2x²+x"], "answer": "A", "explain": "A = (5x²-x) - (3x²-2x) = 5x²-x-3x²+2x = 2x²+x。"}, {"id": 11, "type": "choice", "point": "代数式求值", "stem": "当 x=-2 时，代数式 3x² - 2x + 1 的值是（　）", "options": ["A. 9", "B. 17", "C. 3", "D. 13"], "answer": "B", "explain": "3×(-2)²-2×(-2)+1 = 3×4+4+1 = 12+4+1=17，注意负数平方要先算平方再乘。"}, {"id": 12, "type": "judge", "point": "整式加减-整体思想", "stem": "已知 x+y=3，则代数式 2(x+y)-5 的值为 1。", "answer": "对", "explain": "把 x+y 看作整体代入：2×3-5=1，不需要求出 x、y 各自的值。"}, {"id": 13, "type": "choice", "point": "多项式的项数", "stem": "多项式 x³ - 2x²y + xy² - 1 是（　）", "options": ["A. 三次三项式", "B. 三次四项式", "C. 四次三项式", "D. 四次四项式"], "answer": "B", "explain": "共有4项（含常数项-1），最高次数是3（x³ 与 -2x²y、xy² 都是3次），故为三次四项式。"}, {"id": 14, "type": "fill", "point": "整式加减-括号嵌套", "stem": "化简：2x - [3x - (5x - 1)] = ______", "answer": ["4x-1", "4x - 1"], "explain": "由内向外去括号：2x-[3x-5x+1]=2x-[-2x+1]=2x+2x-1=4x-1，多重括号要格外注意每层符号。"}, {"id": 15, "type": "choice", "point": "同类项-易错(含多个字母)", "stem": "下列合并同类项正确的是（　）", "options": ["A. 3x+2y=5xy", "B. 2a²b - a²b = a²b", "C. 5m - 2m = 3", "D. 3x² + 2x = 5x³"], "answer": "B", "explain": "A、C、D 都把不同类项强行合并（A、D 字母部分不同，C 少写了字母 m），只有 B 是真正的同类项合并。"}, {"id": 16, "type": "fill", "point": "整式加减-多重括号(较难)", "stem": "化简：3x - [5x - 2(x-1) + 3] = ______", "answer": ["-5"], "explain": "由内向外：5x-2(x-1)+3=5x-2x+2+3=3x+5，再算 3x-(3x+5)=-5。多重括号要一层层拆，容易漏符号。"}, {"id": 17, "type": "fill", "point": "整式加减-系数混合运算", "stem": "化简：2(3a-2b) - 3(a-2b) = ______", "answer": ["3a+2b", "3a + 2b"], "explain": "先去括号：6a-4b-3a+6b，再合并同类项：(6-3)a+(-4+6)b=3a+2b。"}, {"id": 18, "type": "choice", "point": "整式加减的应用(倍数关系-较难)", "stem": "已知 A=2x²-3x+1，B=-x²+2x-3，则 2A-B = （　）", "options": ["A. 5x²-8x+5", "B. 3x²-4x-1", "C. 5x²-8x-1", "D. 3x²-8x+5"], "answer": "A", "explain": "2A=4x²-6x+2，2A-B=4x²-6x+2-(-x²+2x-3)=4x²-6x+2+x²-2x+3=5x²-8x+5，减去B时要注意每一项都变号。"}, {"id": 19, "type": "choice", "point": "单项式的概念（易错-字母在分母，较难)", "stem": "下列各式中，不是单项式的是（　）", "options": ["A. (2/3)x²y", "B. x/2", "C. 2/x", "D. -5"], "answer": "C", "explain": "单项式要求字母只能出现在分子（指数为正整数）。A、B都是“数字除以数字”本质仍是单项式；C 中字母 x 在分母，相当于负指数，不是单项式；D 常数也算单项式（0次）。"}, {"id": 20, "type": "fill", "point": "多项式的排列(较难)", "stem": "把多项式 3x - 5 + 2x³ - x² 按 x 的降幂排列为 ______", "answer": ["2x³-x²+3x-5", "2x^3-x^2+3x-5", "2x3-x2+3x-5"], "explain": "按x的指数从高到低排列：2x³（3次）、-x²（2次）、3x（1次）、-5（0次），排列后为 2x³-x²+3x-5。"}, {"id": 21, "type": "fill", "point": "整式加减的应用(周长问题，较难)", "stem": "一个长方形的长为 (2a+3)，宽为 (a-1)，则该长方形的周长可表示为 ______（用最简整式）", "answer": ["6a+4", "6a + 4"], "explain": "周长=2×(长+宽)=2×[(2a+3)+(a-1)]=2×(3a+2)=6a+4。"}, {"id": 22, "type": "fill", "point": "整体代入求值(变形技巧，较难)", "stem": "已知 a-b=3，则代数式 2a-2b-5 的值为 ______", "answer": ["1"], "explain": "2a-2b-5=2(a-b)-5=2×3-5=1，把 a-b 看作整体代入，不需要分别求出 a、b。"}, {"id": 23, "type": "fill", "point": "整式加减-待定系数(不含某项，较难)", "stem": "若代数式 3x²-2x+mx²+1 化简后不含 x² 项，则 m = ______", "answer": ["-3"], "explain": "3x²+mx²=(3+m)x²，不含x²项即系数为0：3+m=0，解得 m=-3。"}, {"id": 24, "type": "choice", "point": "整式加减-完全抵消(易错，较难)", "stem": "计算：(5a²-3a+2) + (-2a²+3a-2) 的结果是（　）", "options": ["A. 3a²", "B. 3a²-6a+4", "C. 7a²-6a", "D. 3a²+4"], "answer": "A", "explain": "5a²-3a+2-2a²+3a-2=(5-2)a²+(-3+3)a+(2-2)=3a²，一次项和常数项恰好都抵消为0，容易漏看。"}, {"id": 25, "type": "judge", "point": "单项式系数-易错(隐含系数1或-1，较难)", "stem": "单项式 -x 的系数是 1。", "answer": "错", "explain": "-x 即 -1×x，系数应为 -1，容易漏看负号误认为系数是1。"}], "ch4": [{"id": 1, "type": "choice", "point": "直线、射线、线段的区别", "stem": "下列说法正确的是（　）", "options": ["A. 射线比直线短", "B. 两点之间线段最短", "C. 直线可以量出长度", "D. 射线有两个端点"], "answer": "B", "explain": "直线、射线都是无限长，不能比较长短也不能测量；射线只有一个端点；“两点之间线段最短”是基本事实。"}, {"id": 2, "type": "judge", "point": "直线的性质", "stem": "经过一点可以画无数条直线，经过两点只能画一条直线。", "answer": "对", "explain": "这是“两点确定一条直线”的基本事实。"}, {"id": 3, "type": "fill", "point": "线段的中点与计算", "stem": "已知线段 AB=12cm，点 C 是 AB 的中点，则 AC = ______ cm", "answer": ["6"], "explain": "中点把线段平均分成两段，AC = AB÷2 = 6cm。"}, {"id": 4, "type": "choice", "point": "线段计算(易错-位置关系)", "stem": "点C在线段AB上，AC=5，CB=3，则AB=（　）", "options": ["A. 2", "B. 8", "C. 15", "D. 无法确定"], "answer": "B", "explain": "C在AB上（线段之间），AB=AC+CB=5+3=8；若没说明C在AB上，则要分类讨论，这是常见易错点。"}, {"id": 5, "type": "choice", "point": "角的度量与换算", "stem": "1.5° 等于（　）", "options": ["A. 1°30′", "B. 1°50′", "C. 1°15′", "D. 1°3′"], "answer": "A", "explain": "0.5°=0.5×60′=30′，所以1.5°=1°30′。"}, {"id": 6, "type": "fill", "point": "角度的计算-互余互补", "stem": "一个角是35°，它的余角是______°，补角是______°", "answer": ["55,145", "55，145", "55, 145"], "explain": "互余：90-35=55°；互补：180-35=145°，注意余角补角都是相对“两个角的关系”而非角本身的性质。"}, {"id": 7, "type": "judge", "point": "互余互补的性质", "stem": "同一个角的补角一定比它的余角大。", "answer": "对", "explain": "设角为x，补角=180-x，余角=90-x（0<x<90），补角-余角=90>0，恒成立。"}, {"id": 8, "type": "choice", "point": "角平分线的计算", "stem": "OC是∠AOB的平分线，∠AOB=80°，则∠AOC=（　）", "options": ["A. 80°", "B. 40°", "C. 20°", "D. 160°"], "answer": "B", "explain": "角平分线把角分成相等的两半：80÷2=40°。"}, {"id": 9, "type": "choice", "point": "钟表角度问题(易错-方向)", "stem": "钟表3点整时，时针与分针所成的角是（　）", "options": ["A. 30°", "B. 60°", "C. 90°", "D. 180°"], "answer": "C", "explain": "3点整时分针指向12，时针指向3，正好是钟面的1/4圈：360°÷4=90°。"}, {"id": 10, "type": "choice", "point": "多边形的对角线", "stem": "从五边形的一个顶点出发，可以画出的对角线条数是（　）", "options": ["A. 1", "B. 2", "C. 3", "D. 4"], "answer": "B", "explain": "从一个顶点出发，能连的对角线条数=边数-3，5-3=2。"}, {"id": 11, "type": "fill", "point": "多边形对角线总条数", "stem": "六边形的对角线共有______条", "answer": ["9"], "explain": "n边形对角线总数公式：n(n-3)/2，代入n=6：6×3/2=9。"}, {"id": 12, "type": "judge", "point": "圆的基本概念", "stem": "圆是轴对称图形，也是中心对称图形。", "answer": "对", "explain": "过圆心的任意直线都是对称轴（轴对称），且绕圆心旋转180°能与自身重合（中心对称）。"}, {"id": 13, "type": "choice", "point": "圆的半径与直径关系", "stem": "已知圆的直径是8cm，则该圆的半径是（　）", "options": ["A. 16cm", "B. 8cm", "C. 4cm", "D. 2cm"], "answer": "C", "explain": "半径=直径÷2=4cm。"}, {"id": 14, "type": "choice", "point": "三视图基础(展开图)", "stem": "正方体的展开图最多能有几个正方形沿一条边排成一行（　）", "options": ["A. 3个", "B. 4个", "C. 5个", "D. 6个"], "answer": "B", "explain": "正方体共6个面展开，一行最多排4个，这是判断正方体展开图是否正确的常用技巧。"}, {"id": 15, "type": "fill", "point": "线段计算-动点/和差问题", "stem": "已知点A、B、C在同一直线上，AB=10，BC=4，且C在线段AB上，则AC=______", "answer": ["6"], "explain": "C在AB上，AC=AB-BC=10-4=6，与“C在AB延长线上”的情形要分清（那种情况AC会等于14）。"}, {"id": 16, "type": "choice", "point": "角平分线-多重角度综合计算(较难)", "stem": "OC平分∠AOB，OD平分∠BOC，若∠AOB=80°，则∠AOD=（　）", "options": ["A. 50°", "B. 60°", "C. 70°", "D. 80°"], "answer": "B", "explain": "OC平分∠AOB：∠AOC=∠COB=40°；OD平分∠BOC(40°)：∠COD=∠DOB=20°；∠AOD=∠AOC+∠COD=40+20=60°。"}, {"id": 17, "type": "fill", "point": "线段中点-中点综合(较难)", "stem": "已知线段AB=20，点C为AB上一点，M、N分别是AC、CB的中点，则MN=______", "answer": ["10"], "explain": "MN=MC+CN=AC/2+CB/2=(AC+CB)/2=AB/2=10，结果与C的具体位置无关，是这类题的关键结论。"}, {"id": 18, "type": "choice", "point": "钟表角度-非整点综合计算(较难)", "stem": "钟表4点30分时，时针与分针所成的角（较小角）是（　）", "options": ["A. 30°", "B. 45°", "C. 60°", "D. 75°"], "answer": "B", "explain": "分针在30分处，对应180°；时针4点整在120°，30分钟又移动了0.5°×30=15°，共135°；两者相差180-135=45°。"}, {"id": 19, "type": "choice", "point": "正方体展开图-基础事实(较难记忆点)", "stem": "下列关于正方体展开图的说法，正确的是（　）", "options": ["A. 只要是6个正方形组成的图形，都能折成正方体", "B. “田”字形（2×3排列除去两个角）一定能折成正方体", "C. 正方体的展开图不唯一，共有11种基本形式", "D. 展开图中一行最多可以有5个正方形排列"], "answer": "C", "explain": "正方体共有11种展开图；不是任意6个正方形拼在一起都能折成正方体（要看具体排列方式），一行最多排4个。"}, {"id": 20, "type": "judge", "point": "圆的基本概念(弦与直径)", "stem": "直径是圆中最长的弦。", "answer": "对", "explain": "圆中所有弦里，过圆心的弦（直径）最长，这是圆的基本性质。"}, {"id": 21, "type": "fill", "point": "角度的度分秒运算(进位，较难)", "stem": "计算：32°45′ + 47°38′ = ______（结果化为最简度分秒）", "answer": ["80°23′", "80°23'", "80度23分"], "explain": "先加分：45′+38′=83′=1°23′；再加度：32°+47°+1°=80°，结果为80°23′，注意分超过60要进位到度。"}, {"id": 22, "type": "choice", "point": "多边形对角线-反向求边数(较难)", "stem": "已知一个n边形的对角线共有14条，则n=（　）", "options": ["A. 6", "B. 7", "C. 8", "D. 9"], "answer": "B", "explain": "对角线总数公式n(n-3)/2=14，即n(n-3)=28，n=7时7×4=28成立。"}, {"id": 23, "type": "fill", "point": "线段的和差倍分-列方程(较难)", "stem": "已知线段AB的长是线段CD长的3倍，且AB比CD长10cm，则CD的长为______cm", "answer": ["5"], "explain": "设CD=x，则AB=3x，由AB-CD=10得3x-x=10，2x=10，x=5。"}, {"id": 24, "type": "judge", "point": "角的表示方法(易错细节)", "stem": "用一个大写字母表示角时，这个大写字母必须是角的顶点，且这个顶点处只能有一个角。", "answer": "对", "explain": "如果一个顶点处有多个角（比如被内部射线分成几部分），就不能只用顶点字母表示，必须用三个字母或加符号区分。"}, {"id": 25, "type": "judge", "point": "互余互补-易错(需分类讨论，较难)", "stem": "一个角的补角一定大于这个角。", "answer": "错", "explain": "反例：角为100°时，补角=180-100=80°，80°<100°，说明补角不一定大于原角，只有原角是锐角时补角才更大。"}], "ch5": [{"id": 1, "type": "judge", "point": "方程的概念", "stem": "含有未知数的等式叫做方程。", "answer": "对", "explain": "这是方程的定义：既要“含未知数”，又要“是等式”，两者缺一不可。"}, {"id": 2, "type": "choice", "point": "方程的解-代入验证", "stem": "x=2 是下列哪个方程的解（　）", "options": ["A. 3x-1=4", "B. 2x+1=6", "C. x+3=5", "D. 5-x=2"], "answer": "C", "explain": "把x=2代入逐一验证：C式 2+3=5 成立；A式3×2-1=5≠4；B式2×2+1=5≠6；D式5-2=3≠2。"}, {"id": 3, "type": "choice", "point": "等式的基本性质", "stem": "由等式 3x=6 得到 x=2，依据的是（　）", "options": ["A. 等式两边同时加同一个数", "B. 等式两边同时乘同一个数", "C. 等式两边同时除以同一个不为0的数", "D. 等式的对称性"], "answer": "C", "explain": "等式性质2：等式两边同除以同一个不为0的数，结果仍是等式，此处两边同除以3。"}, {"id": 4, "type": "fill", "point": "解一元一次方程-移项", "stem": "解方程：3x - 5 = x + 7，x = ______", "answer": ["6"], "explain": "移项：3x-x=7+5，2x=12，x=6。注意移项要变号。"}, {"id": 5, "type": "judge", "point": "移项-易错(符号)", "stem": "方程 2x+3=x-5 移项后得 2x-x=-5-3。", "answer": "对", "explain": "移项要变号：+3移到右边变-3，x移到左边变-x，即2x-x=-5-3，是正确的移项。"}, {"id": 6, "type": "fill", "point": "解一元一次方程-去分母", "stem": "解方程：x/2 - 1 = x/3 + 1，x = ______", "answer": ["12"], "explain": "两边同乘6去分母：3x-6=2x+6，移项得x=12，去分母时不含分母的项也要乘6，是最易漏的一步。"}, {"id": 7, "type": "choice", "point": "去分母-易错(漏乘常数项)", "stem": "方程 (x+1)/3 = x - 2 去分母正确的是（　）", "options": ["A. x+1=3x-2", "B. x+1=3x-6", "C. x+1=3x-2×3", "D. x+1=3(x-2)"], "answer": "D", "explain": "两边同乘3：左边(x+1)/3×3=x+1，右边(x-2)×3要整体加括号=3(x-2)，很多同学漏给右边加括号导致只乘了x漏乘2。"}, {"id": 8, "type": "choice", "point": "去括号解方程", "stem": "解方程 2(x-1) = 3(2x+1) 的解为（　）", "options": ["A. x=-5/4", "B. x=5/4", "C. x=-1", "D. x=1"], "answer": "A", "explain": "去括号：2x-2=6x+3，移项：2x-6x=3+2，-4x=5，x=-5/4。"}, {"id": 9, "type": "fill", "point": "一元一次方程的应用-和差问题", "stem": "甲乙两数之和为50，甲数比乙数多8，则乙数是______", "answer": ["21"], "explain": "设乙数为x，甲数为x+8，则x+(x+8)=50，2x=42，x=21。"}, {"id": 10, "type": "choice", "point": "应用题-行程问题", "stem": "甲、乙两地相距60千米，小明骑车以每小时15千米的速度从甲地出发，几小时能到乙地（　）", "options": ["A. 3小时", "B. 4小时", "C. 5小时", "D. 6小时"], "answer": "B", "explain": "时间=路程÷速度=60÷15=4小时。"}, {"id": 11, "type": "choice", "point": "应用题-列方程(打折/销售)", "stem": "一件商品打八折后售价为160元，则原价为（　）", "options": ["A. 128元", "B. 180元", "C. 200元", "D. 220元"], "answer": "C", "explain": "设原价为x，0.8x=160，x=200元。"}, {"id": 12, "type": "judge", "point": "应用题-工程问题", "stem": "一项工程甲单独做10天完成，设工作总量为1，则甲每天完成这项工程的1/10。", "answer": "对", "explain": "工作效率=工作总量÷时间=1÷10=1/10，这是工程问题的基本设法。"}, {"id": 13, "type": "fill", "point": "应用题-列方程(年龄问题)", "stem": "父亲今年40岁，儿子今年10岁，______年后父亲的年龄是儿子的3倍", "answer": ["5"], "explain": "设x年后，40+x=3(10+x)，40+x=30+3x，10=2x，x=5。"}, {"id": 14, "type": "choice", "point": "方程的解-唯一性理解", "stem": "关于x的方程 ax=6 一定有唯一解，这个说法（　）", "options": ["A. 正确", "B. 错误，当a=0时无解或有无数解", "C. 错误，方程恒有两个解", "D. 无法判断"], "answer": "B", "explain": "一元一次方程要求系数a≠0才有唯一解；当a=0时，若右边也是0则x可为任意数（无数解），否则无解，这是常被忽略的隐含条件。"}, {"id": 15, "type": "fill", "point": "整体思想解方程", "stem": "已知 2x+3y=7，用含y的式子表示x：x = ______", "answer": ["(7-3y)/2", "(7-3y)/2"], "explain": "把方程看作关于x的一元一次方程，移项得2x=7-3y，两边除以2：x=(7-3y)/2。"}, {"id": 16, "type": "fill", "point": "解一元一次方程-不同分母去分母(较难)", "stem": "解方程：x/2 - (x-1)/3 = 1，x = ______", "answer": ["4"], "explain": "两边同乘6（分母2和3的最小公倍数）：3x-2(x-1)=6，展开：3x-2x+2=6，x+2=6，x=4。"}, {"id": 17, "type": "fill", "point": "含字母系数方程-无解讨论(较难)", "stem": "已知关于x的方程 kx+3=2x-1 无解，则 k = ______", "answer": ["2"], "explain": "移项得(k-2)x=-4，若k=2，方程变为0×x=-4，左边恒为0、右边不为0，无解成立。"}, {"id": 18, "type": "choice", "point": "工程问题-合作(较难经典题)", "stem": "一项工程，甲单独做要10天完成，乙单独做要15天完成，两人合作需要（　）天完成", "options": ["A. 5天", "B. 6天", "C. 8天", "D. 12天"], "answer": "B", "explain": "设合作x天，x/10+x/15=1，两边乘30：3x+2x=30，5x=30，x=6。"}, {"id": 19, "type": "fill", "point": "相遇问题-行程应用(较难)", "stem": "甲乙两地相距100千米，甲、乙两车同时从两地相向而行，甲车每小时40千米，乙车每小时60千米，则______小时后两车相遇", "answer": ["1"], "explain": "相向而行，速度和=40+60=100千米/时，时间=路程÷速度和=100÷100=1小时。"}, {"id": 20, "type": "fill", "point": "追及问题-行程应用(较难)", "stem": "慢车先出发1小时后，快车从同一地点出发追赶。慢车速度60km/h，快车速度80km/h，则快车用______小时追上慢车", "answer": ["3"], "explain": "设快车用x小时追上，追上时两车路程相等：80x=60×1+60x，80x-60x=60，20x=60，x=3。"}, {"id": 21, "type": "fill", "point": "数字问题-两位数表示(较难，代数思想)", "stem": "一个两位数，十位数字与个位数字之和为9，若十位数字为x，则这个两位数可表示为______（用含x的式子）", "answer": ["9x+9", "9x + 9"], "explain": "十位数字为x，个位数字为9-x，两位数=10×十位+个位=10x+(9-x)=9x+9。"}, {"id": 22, "type": "fill", "point": "分配问题-三者关系列方程(较难)", "stem": "甲、乙、丙三人共有图书80本，甲比乙多10本，乙比丙多5本，设丙有图书x本，则丙有图书______本", "answer": ["20"], "explain": "丙=x，乙=x+5，甲=x+15，三者之和：x+(x+5)+(x+15)=80，3x+20=80，3x=60，x=20。"}, {"id": 23, "type": "fill", "point": "利润问题-进价售价利润率(较难)", "stem": "某商品进价为80元，标价为120元，商店打八折出售，则每件商品的利润是______元", "answer": ["16"], "explain": "实际售价=120×0.8=96元，利润=售价-进价=96-80=16元。"}, {"id": 24, "type": "fill", "point": "比例问题-列方程(较难)", "stem": "甲、乙两数的比为2:3，且乙比甲多15，则甲数为______", "answer": ["30"], "explain": "设甲=2x，乙=3x，由乙-甲=15得3x-2x=15，x=15，甲=2x=30。"}, {"id": 25, "type": "choice", "point": "方程的解-逆向求参数(较难)", "stem": "已知 x=2 是方程 3x+a=8-x 的解，则 a=（　）", "options": ["A. 0", "B. 2", "C. -2", "D. 4"], "answer": "A", "explain": "代入x=2：3×2+a=8-2，6+a=6，解得a=0。"}], "ch6": [{"id": 1, "type": "choice", "point": "普查与抽样调查", "stem": "要了解全班50名学生的身高情况，最适合采用的调查方式是（　）", "options": ["A. 抽样调查", "B. 普查", "C. 网络调查", "D. 随意调查"], "answer": "B", "explain": "对象少（50人）、便于逐一调查，适合普查；抽样调查一般用于总体数量大、不便逐一调查的情形。"}, {"id": 2, "type": "judge", "point": "普查与抽样调查-适用场景", "stem": "要检测一批灯泡的使用寿命，应采用普查的方式。", "answer": "错", "explain": "检测寿命具有破坏性（灯泡用坏才知道寿命），不能普查，必须采用抽样调查。"}, {"id": 3, "type": "choice", "point": "总体、个体、样本的概念", "stem": "为了解某地10000名七年级学生的视力情况，从中抽取500名学生进行调查，则500名学生的视力是（　）", "options": ["A. 总体", "B. 个体", "C. 样本", "D. 样本容量"], "answer": "C", "explain": "被抽取的部分对象的数据集合叫“样本”；10000名学生视力的全体是总体；500是样本容量（一个数字，不是数据本身），容易和“样本”混淆。"}, {"id": 4, "type": "fill", "point": "样本容量的判断", "stem": "上题中，样本容量是______", "answer": ["500"], "explain": "样本容量是样本中个体的数目，是一个数（不带单位“人”也算对，但很多同学会误填“500名学生”当作样本容量描述）。"}, {"id": 5, "type": "choice", "point": "统计图的选择-条形图", "stem": "要清楚地表示各班人数的多少，最合适的统计图是（　）", "options": ["A. 折线图", "B. 条形图", "C. 扇形图", "D. 无法用图表示"], "answer": "B", "explain": "条形图便于比较各类别数量的多少；折线图侧重变化趋势；扇形图侧重占比。"}, {"id": 6, "type": "choice", "point": "统计图的选择-折线图", "stem": "要反映某地一周每天最高气温的变化趋势，最合适的统计图是（　）", "options": ["A. 条形图", "B. 折线图", "C. 扇形图", "D. 象形图"], "answer": "B", "explain": "折线图强调数据随时间（或顺序）变化的趋势，最适合表示气温变化。"}, {"id": 7, "type": "choice", "point": "统计图的选择-扇形图", "stem": "要反映一个家庭一个月各项支出占总支出的百分比，最合适的统计图是（　）", "options": ["A. 条形图", "B. 折线图", "C. 扇形图", "D. 直方图"], "answer": "C", "explain": "扇形图（饼图）专门用来表示部分占整体的百分比关系。"}, {"id": 8, "type": "fill", "point": "扇形图角度计算", "stem": "在扇形统计图中，若某类数据占总体的25%，则该扇形的圆心角是______°", "answer": ["90"], "explain": "圆一周是360°，360×25%=90°，这是扇形图最核心的计算公式。"}, {"id": 9, "type": "judge", "point": "扇形图角度-反向计算(易错)", "stem": "扇形统计图中，某扇形圆心角是72°，则它表示的数据占总体的比例是72%。", "answer": "错", "explain": "应为 72÷360=20%，很多同学会直接把角度数当成百分比，这是常见误区。"}, {"id": 10, "type": "choice", "point": "数据整理-频数与频率", "stem": "某次测验共40人参加，成绩为优秀的有8人，则优秀的频率是（　）", "options": ["A. 8", "B. 0.2", "C. 8%", "D. 20"], "answer": "B", "explain": "频率=频数÷总数=8÷40=0.2，注意频数(8)与频率(0.2)不是同一个概念，也不要漏写成百分数以外形式的误算。"}, {"id": 11, "type": "fill", "point": "频数与频率-求总数", "stem": "一批零件抽检100件，合格品的频率是0.95，则合格品有______件", "answer": ["95"], "explain": "频数=频率×总数=0.95×100=95。"}, {"id": 12, "type": "choice", "point": "数据的分组与组距", "stem": "将一组从60到100的数据分成4组，则组距应为（　）", "options": ["A. 4", "B. 8", "C. 10", "D. 40"], "answer": "C", "explain": "组距=(最大值-最小值)÷组数=(100-60)÷4=10。"}, {"id": 13, "type": "judge", "point": "调查方式-抽样的代表性", "stem": "只在学校篮球队中抽取学生调查全校学生的身高情况，这样抽取的样本具有代表性。", "answer": "错", "explain": "篮球队学生身高普遍偏高，不能代表全校学生的整体水平，样本的选取必须随机、覆盖面广才有代表性。"}, {"id": 14, "type": "choice", "point": "统计图信息误导（易错-坐标轴）", "stem": "在条形统计图中，如果纵轴不从0开始，可能会（　）", "options": ["A. 使图表更美观，没有其他影响", "B. 夸大或缩小数据之间的差异，造成误导", "C. 让数据显示得更精确", "D. 不影响任何判断"], "answer": "B", "explain": "纵轴不从0开始会视觉上放大微小差距，是统计图表中常见的“视觉陷阱”，读图时要特别留意坐标起点。"}, {"id": 15, "type": "fill", "point": "统计图综合计算", "stem": "某班40人，扇形图显示喜欢数学的占30%，则喜欢数学的有______人", "answer": ["12"], "explain": "40×30%=12人。"}, {"id": 16, "type": "fill", "point": "频数分布-求缺失频数(较难)", "stem": "某班50人参加测验，成绩分为优秀、良好、及格、不及格四档，已知优秀8人、良好20人、及格15人，则不及格人数是______人", "answer": ["7"], "explain": "总人数减去已知各档人数：50-8-20-15=7人，各档人数之和必须等于总数。"}, {"id": 17, "type": "fill", "point": "频数频率综合应用(较难)", "stem": "上题中，及格及以上（优秀+良好+及格）的人数占总人数的______%", "answer": ["86"], "explain": "(8+20+15)/50=43/50=0.86=86%。"}, {"id": 18, "type": "fill", "point": "数据分组-组数计算(较难)", "stem": "一批数据的最大值为98，最小值为42，若组距定为8，则应分成______组", "answer": ["7"], "explain": "组数=(最大值-最小值)÷组距=(98-42)÷8=7（除不尽时通常向上取整，此处恰好整除）。"}, {"id": 19, "type": "fill", "point": "数据分组-组距反算", "stem": "若数据范围是30到90，要分成6组，则组距应为______", "answer": ["10"], "explain": "组距=(最大值-最小值)÷组数=(90-30)÷6=10。"}, {"id": 20, "type": "fill", "point": "扇形图-频率之和为1(较难)", "stem": "扇形统计图中，甲乙丙丁四类数据占比分别为30%、25%、20%、丁类占比是______%", "answer": ["25"], "explain": "四类占比之和必为100%：100-30-25-20=25%，这是扇形图最基本的隐含条件。"}, {"id": 21, "type": "fill", "point": "扇形图角度综合计算(较难)", "stem": "上题中，丁类数据对应的扇形圆心角是______°", "answer": ["90"], "explain": "圆心角=360×占比=360×25%=90°。"}, {"id": 22, "type": "judge", "point": "抽样调查-概念辨析(易错)", "stem": "抽样调查得到的结果，一定和普查得到的结果完全一样。", "answer": "错", "explain": "抽样调查得到的是对总体的估计值，会存在一定误差，不能保证与普查结果完全相同。"}, {"id": 23, "type": "choice", "point": "数据分组-区间开闭细节(较难易错)", "stem": "一个数据分组为“60≤x<70”，则数据70应归入（　）", "options": ["A. 该组（60≤x<70）", "B. 下一组（70≤x<80）", "C. 两组都可以", "D. 无法确定"], "answer": "B", "explain": "该组是“左闭右开”区间，70不满足 x<70，所以应归入下一组“70≤x<80”，这是分组统计最容易出错的细节。"}, {"id": 24, "type": "fill", "point": "频数频率-合并数据综合计算(较难)", "stem": "甲组样本容量40，优秀频数8；乙组样本容量60，优秀频数18。合并后总的优秀频率是______（写成小数）", "answer": ["0.26"], "explain": "合并后总优秀频数=8+18=26，总容量=40+60=100，频率=26÷100=0.26，不能直接把两组的频率简单相加或平均。"}, {"id": 25, "type": "choice", "point": "总体个体样本-辨析(基础但常混淆)", "stem": "某校为了解学生每天阅读时间，从全校随机抽取100名学生进行调查，这100名学生构成的是（　）", "options": ["A. 总体", "B. 个体", "C. 样本", "D. 样本容量"], "answer": "C", "explain": "被抽取的部分对象的集合叫“样本”；100是样本容量（一个数字）；全校学生的整体才是总体。"}]}};
+
+function normalize(text) {
+    if (text === null || text === undefined) return "";
+    return String(text).trim().replace(/\s+/g, "").replace(/　/g, "");
+}
+
+function showHome() {
+    document.getElementById('home-view').style.display = 'block';
+    document.getElementById('quiz-view').style.display = 'none';
+}
+
+function renderHome() {
+    const list = document.getElementById('chapter-list');
+    list.innerHTML = '';
+    DATA.chapters.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'chapter-card';
+        btn.innerHTML = `<span class="chapter-title">${c.title}</span><span class="arrow">\u203a</span>`;
+        btn.onclick = () => openQuiz(c.id);
+        list.appendChild(btn);
+    });
+}
+
+function openQuiz(chapterId) {
+    const chapter = DATA.chapters.find(c => c.id === chapterId);
+    const questions = DATA.questions[chapterId];
+
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('quiz-view').style.display = 'block';
+    document.getElementById('quiz-title').textContent = chapter.title;
+    document.getElementById('quiz-subtitle').textContent = `共 ${questions.length} 题，答完点击底部「交卷」`;
+
+    const form = document.getElementById('quiz-form');
+    form.innerHTML = '';
+    questions.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.dataset.qid = q.id;
+
+        let inner = `
+            <div class="question-head">
+                <span class="q-index">第 ${idx + 1} 题</span>
+                <span class="q-tag">${q.point}</span>
+            </div>
+            <div class="q-stem">${q.stem}</div>
+        `;
+
+        if (q.type === 'choice') {
+            inner += '<div class="options">';
+            q.options.forEach(opt => {
+                const letter = opt[0];
+                inner += `<label class="option"><input type="radio" name="q${q.id}" value="${letter}"><span>${opt}</span></label>`;
+            });
+            inner += '</div>';
+        } else if (q.type === 'judge') {
+            inner += `<div class="options">
+                <label class="option"><input type="radio" name="q${q.id}" value="对"><span>对</span></label>
+                <label class="option"><input type="radio" name="q${q.id}" value="错"><span>错</span></label>
+            </div>`;
+        } else if (q.type === 'fill') {
+            inner += `<input type="text" class="fill-input" name="q${q.id}" placeholder="在此填写答案">`;
+        }
+
+        inner += `<div class="feedback" id="feedback-${q.id}"></div>`;
+        card.innerHTML = inner;
+        form.appendChild(card);
+    });
+
+    document.getElementById('score-panel').style.display = 'none';
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '交卷';
+    submitBtn.onclick = () => gradeQuiz(chapterId, questions);
+}
+
+function gradeQuiz(chapterId, questions) {
+    const form = document.getElementById('quiz-form');
+    const formData = new FormData(form);
+    const answers = {};
+    for (const [key, value] of formData.entries()) {
+        answers[key.replace('q', '')] = value;
+    }
+
+    let correctCount = 0;
+    questions.forEach(q => {
+        const userAnswer = answers[String(q.id)] || '';
+        let isCorrect, displayAnswer;
+
+        if (q.type === 'fill') {
+            const accepted = Array.isArray(q.answer) ? q.answer : [q.answer];
+            isCorrect = accepted.map(normalize).includes(normalize(userAnswer));
+            displayAnswer = accepted[0];
+        } else {
+            isCorrect = normalize(userAnswer) === normalize(q.answer);
+            displayAnswer = q.answer;
+        }
+
+        if (isCorrect) correctCount++;
+
+        const card = document.querySelector(`.question-card[data-qid="${q.id}"]`);
+        card.classList.remove('correct', 'wrong');
+        card.classList.add(isCorrect ? 'correct' : 'wrong');
+        const fb = document.getElementById(`feedback-${q.id}`);
+        fb.innerHTML = `
+            <div class="fb-line">你的答案：${userAnswer || '（未作答）'}　${isCorrect ? '\u2705' : '\u274c 正确答案：' + displayAnswer}</div>
+            <div class="fb-explain">解析：${q.explain}</div>
+        `;
+    });
+
+    const total = questions.length;
+    const score = Math.round(correctCount / total * 100);
+    const panel = document.getElementById('score-panel');
+    panel.style.display = 'block';
+    panel.querySelector('.score-number').textContent = `${score} 分`;
+    panel.querySelector('.score-detail').textContent = `共 ${total} 题，答对 ${correctCount} 题`;
+
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').textContent = '已交卷';
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+
+renderHome();
+showHome();
+</script>
+</body>
+</html>
