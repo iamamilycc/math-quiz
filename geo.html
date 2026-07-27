@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>七年级地理 - 湘教版</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #222;
+}
+.page { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 21px; margin: 8px 0 4px; }
+.subtitle { color: #777; font-size: 14px; margin: 0 0 20px; }
+.back-link { display: inline-block; color: #3a6df0; text-decoration: none; font-size: 14px; margin-bottom: 12px; background: none; border: none; padding: 0; cursor: pointer; }
+
+.card-list { display: flex; flex-direction: column; gap: 12px; }
+.big-card {
+    display: flex; justify-content: space-between; align-items: center;
+    background: white; border-radius: 12px; padding: 18px 20px;
+    text-decoration: none; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: none; width: 100%; font-size: 16px; text-align: left; cursor: pointer;
+    border-left: 4px solid #2ecc71;
+}
+.big-card-title { font-size: 16px; font-weight: 600; }
+.big-card-desc { font-size: 12px; color: #999; margin-top: 3px; }
+.arrow { color: #bbb; font-size: 20px; }
+
+.tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; background: white;
+    color: #666; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.tab-btn.active { background: #2ecc71; color: white; }
+
+.point-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.point-title { font-size: 15.5px; font-weight: 700; margin: 0 0 8px; color: #1a7a44; }
+.rule-box {
+    background: #eafaf0; border-left: 3px solid #2ecc71; padding: 10px 12px; border-radius: 8px;
+    font-size: 14px; line-height: 1.7; margin-bottom: 10px;
+}
+.example-box {
+    background: #f7f8fa; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.7;
+}
+.example-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; color: white;
+    background: #3a6df0; padding: 1px 8px; border-radius: 8px; margin-bottom: 6px;
+}
+
+.question-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid transparent;
+}
+.question-card.correct { border-left-color: #2ecc71; background: #f3fdf6; }
+.question-card.wrong { border-left-color: #e74c3c; background: #fdf3f3; }
+.question-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.q-index { font-size: 13px; color: #999; }
+.q-tag { font-size: 12px; color: #1a7a44; background: #eafaf0; padding: 2px 8px; border-radius: 10px; }
+.q-stem { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f7f8fa; border-radius: 8px; font-size: 14px; }
+.option input { width: 18px; height: 18px; }
+.fill-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.feedback { margin-top: 10px; font-size: 13px; line-height: 1.7; }
+.fb-line { font-weight: 600; margin-bottom: 6px; }
+.fb-explain { color: #555; background: #f7f8fa; padding: 10px 12px; border-radius: 8px; }
+#submit-btn {
+    display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+    color: white; background: #2ecc71; border: none; border-radius: 10px; margin-top: 10px;
+}
+#submit-btn:disabled { background: #aaa; }
+.score-panel { text-align: center; background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.score-number { font-size: 36px; font-weight: 700; color: #2ecc71; }
+.score-detail { color: #666; margin: 8px 0 16px; }
+
+#home-view, #chapter-view, #section-view { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div id="home-view">
+    <a class="back-link" href="index.html">‹ 返回科目选择</a>
+    <h1>七年级上册地理</h1>
+    <p class="subtitle">湘教版 · 选一章开始学习</p>
+    <div class="card-list" id="chapter-list"></div>
+</div>
+
+<div id="chapter-view">
+    <button class="back-link" onclick="showHome()">‹ 返回章节列表</button>
+    <h1 id="chapter-title"></h1>
+    <p class="subtitle">选一节，先看讲解再做练习</p>
+    <div class="card-list" id="section-list"></div>
+</div>
+
+<div id="section-view">
+    <button class="back-link" id="section-back-btn">‹ 返回本章节列表</button>
+    <h1 id="section-title"></h1>
+    <div class="tab-bar">
+        <button class="tab-btn active" id="tab-notes-btn" onclick="switchTab('notes')">📖 知识点讲解</button>
+        <button class="tab-btn" id="tab-quiz-btn" onclick="switchTab('quiz')">✏️ 课后练习</button>
+    </div>
+    <div id="notes-panel"></div>
+    <div id="quiz-panel" style="display:none;">
+        <form id="quiz-form"></form>
+        <button type="button" id="submit-btn">交卷</button>
+        <div id="score-panel" class="score-panel" style="display:none;">
+            <div class="score-number"></div>
+            <div class="score-detail"></div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+const DATA = {
+  chapters: [
+    {
+      id: "g-c1", title: "第一章 让我们走进地理",
+      sections: [
+        {
+          id: "g-c1-s1", title: "第一节 我们身边的地理",
+          notes: [
+            {point: "什么是地理学", explain: "地理学是研究地球表面自然环境、人类活动，以及两者之间相互关系的科学。简单说，地理学既研究“自然”（山川、河流、气候），也研究“人”（人口、城市、经济）。",
+             example: "比如“为什么南方人爱吃米饭、北方人爱吃面食”，这背后就是地理原因——南方气候适合种水稻，北方气候更适合种小麦。"},
+            {point: "地理与我们生活息息相关", explain: "衣、食、住、行几乎都受地理环境影响，比如穿衣要看当地气候冷暖，房屋样式要适应当地气候和地形。",
+             example: "云南丽江的民居多用木材建造、屋顶坡度大，是因为当地降水较多，坡屋顶利于排水；而西北黄土高原的窑洞则是利用当地黄土直立性好、气候干燥少雨的特点。"},
+            {point: "地理学研究的两大对象——自然地理和人文地理", explain: "自然地理研究“自然”方面的内容，比如地形、气候、河流、植被；人文地理研究“人”方面的内容，比如人口、城市、交通、文化。",
+             example: "“长江从哪里发源、流经哪些省份”属于自然地理；“上海为什么会成为中国重要的经济中心”属于人文地理。"}
+          ],
+          quiz: [
+            {id:1, type:"choice", point:"地理学研究对象", stem:"地理学主要研究的是（　）",
+             options:["A. 只研究自然环境","B. 只研究人类活动","C. 自然环境、人类活动及二者的关系","D. 只研究地图"],
+             answer:"C", explain:"地理学既研究自然环境（如地形气候），也研究人类活动（如人口城市），更重要的是研究两者之间的相互关系。"},
+            {id:2, type:"judge", point:"地理与生活", stem:"地理知识只在地理课本里才用得到，和日常生活关系不大。",
+             answer:"错", explain:"衣食住行、旅游出行、天气预报等，日常生活处处都用得到地理知识，比如出门前看天气预报就是应用气象地理知识。"},
+            {id:3, type:"choice", point:"自然地理与人文地理", stem:"下列属于自然地理研究内容的是（　）",
+             options:["A. 世界人口分布","B. 长江的发源地","C. 北京的城市规划","D. 某地区的经济发展"],
+             answer:"B", explain:"长江的发源地属于河流（自然要素），是自然地理研究内容；人口、城市规划、经济发展都属于人文地理。"},
+            {id:4, type:"choice", point:"地理与生活-民居案例", stem:"云南丽江民居多为坡屋顶，主要是为了适应当地（　）",
+             options:["A. 多风的气候","B. 降水较多的气候","C. 严寒的气候","D. 多地震的环境"],
+             answer:"B", explain:"坡屋顶有利于排水，说明当地降水较多，这体现了民居建筑要适应当地自然环境（地理环境）的特点。"},
+            {id:5, type:"fill", point:"地理学研究对象", stem:"地理学研究的两大对象分别是自然地理和______地理",
+             answer:["人文"], explain:"地理学研究内容分为自然地理（研究自然环境要素）和人文地理（研究人类活动要素）两大类。"}
+          ]
+        },
+        {
+          id: "g-c1-s2", title: "第二节 我们怎样学地理",
+          notes: [
+            {point: "学习地理的基本方法——用图、识图", explain: "地图是学习地理最重要的工具，几乎所有地理信息都可以在地图上直观地表现出来，学地理离不开“读图、用图”。",
+             example: "想知道从北京到上海怎么走、大概多远，看地图（或地图软件）就一目了然，比单纯读文字描述更直观。"},
+            {point: "学习地理要联系实际、实地观察", explain: "除了看书本和地图，亲自去观察、调查身边的地理现象，也是学习地理的重要方法，比如观察本地的天气变化、河流、地形。",
+             example: "观察家乡一年四季的气温和降水变化，记录下来，就是在用“实地观察法”学习气候相关的地理知识。"},
+            {point: "学习地理要树立人地协调观", explain: "人类活动会影响地理环境，地理环境也会反过来制约人类活动，学习地理要理解“人”和“地”是相互影响的关系，做到合理利用自然、保护环境。",
+             example: "过度砍伐森林会导致水土流失、洪涝灾害增多，这就是人类活动破坏地理环境后，环境反过来影响人类生活的例子。"}
+          ],
+          quiz: [
+            {id:1, type:"choice", point:"学习地理的工具", stem:"学习地理最重要、最基本的工具是（　）",
+             options:["A. 课本","B. 地图","C. 望远镜","D. 指南针"],
+             answer:"B", explain:"地图能直观地表示地理事物的位置、分布和相互关系，是学习地理不可缺少的工具。"},
+            {id:2, type:"judge", point:"学习地理的方法", stem:"学习地理只需要死记硬背课本上的文字内容就可以了。",
+             answer:"错", explain:"学习地理更强调读图用图、联系实际观察和调查，单纯死记文字效果有限，也不利于理解地理事物之间的关系。"},
+            {id:3, type:"choice", point:"人地协调观", stem:"“过度砍伐森林导致水土流失加剧”，这体现了（　）",
+             options:["A. 地理环境对人类活动没有影响","B. 人类活动可以完全不受自然环境制约","C. 人类活动与地理环境相互影响、相互制约","D. 森林与水土流失没有关系"],
+             answer:"C", explain:"人类砍伐森林（人类活动）改变了地理环境，而水土流失加剧又反过来影响人类的生产生活，这正体现了人地之间相互影响的关系（人地协调观）。"},
+            {id:4, type:"fill", point:"实地观察法", stem:"学习地理时，长期观察并记录家乡气温、降水变化，这种方法叫做______法",
+             answer:["实地观察","观察"], explain:"亲自实地观察、记录地理现象的变化，是学习地理常用的“实地观察法”。"}
+          ]
+        },
+        {
+          id: "g-c1-s3", title: "探究与实践 学会正确使用地图",
+          notes: [
+            {point: "比例尺——地图缩小的程度", explain: "比例尺表示“图上距离”与“实地距离”的比值，公式是：比例尺 = 图上距离 ÷ 实地距离。比例尺有三种表示方式：数字式（如1:100000）、文字式（如“图上1厘米代表实地1千米”）、线段式（一条带刻度的线段）。",
+             example: "如果比例尺是1:100000，表示图上1厘米代表实地100000厘米，也就是1千米；比例尺的数值越大（分母越小），地图表示的实际范围就越小，但内容画得越详细（比如城市地图）；比例尺数值越小（分母越大），表示的实际范围越大，但内容更简略（比如世界地图）。"},
+            {point: "方向——地图上如何辨认方向", explain: "地图辨认方向有三种情况：①一般地图用“上北下南、左西右东”来定方向；②有指向标的地图，指向标箭头指向北方；③有经纬网的地图，经线指示南北方向，纬线指示东西方向。",
+             example: "如果一张地图上没有指向标也没有经纬网，就默认用“上北下南、左西右东”来判断方向；如果地图上画了一个指向北方的箭头（指向标），就要以这个箭头指的方向为“北”，不能想当然用“上北下南”。"},
+            {point: "图例和注记——地图的“字典”", explain: "图例是地图上各种符号代表什么意思的说明（比如用蓝色线条代表河流，黑点代表城市）；注记是地图上的文字、数字说明（比如城市名称、河流名称、高度数字）。",
+             example: "看到地图上一个三角形符号，旁边图例写着“▲代表山峰”，就知道地图上所有这个三角形符号的位置都是山峰，这就是图例的作用。"}
+          ],
+          quiz: [
+            {id:1, type:"fill", point:"比例尺公式", stem:"比例尺 = 图上距离 ÷ ______",
+             answer:["实地距离"], explain:"比例尺公式：比例尺=图上距离÷实地距离，这是计算比例尺、图上距离、实地距离三者关系的基础公式。"},
+            {id:2, type:"choice", point:"比例尺计算(较难)", stem:"一幅地图的比例尺是1:50000，图上量得两地距离为3厘米，则实地距离是（　）",
+             options:["A. 150米","B. 1500米","C. 15000米","D. 150千米"],
+             answer:"B", explain:"实地距离=图上距离÷比例尺=3厘米÷(1/50000)=3×50000=150000厘米=1500米。计算时要注意单位换算（厘米→米→千米）。"},
+            {id:3, type:"choice", point:"比例尺大小与详略关系(较难)", stem:"下列比例尺中，表示的实际范围最大（内容最简略）的是（　）",
+             options:["A. 1:1000","B. 1:10000","C. 1:100000","D. 1:1000000"],
+             answer:"D", explain:"比例尺的分母越大，比例尺数值越小，表示的实际范围越大，但内容越简略；1:1000000的分母最大，表示的实际范围最大。"},
+            {id:4, type:"judge", point:"地图方向判断", stem:"地图上没有指向标也没有经纬网时，默认按照“上北下南、左西右东”来判断方向。",
+             answer:"对", explain:"这是地图辨别方向最基本的规则，只有在地图上标出指向标或画出经纬网时，才优先按照指向标或经纬网来判断方向。"},
+            {id:5, type:"choice", point:"图例的作用", stem:"地图上用来说明各种符号代表什么地理事物的部分叫（　）",
+             options:["A. 比例尺","B. 指向标","C. 图例","D. 注记"],
+             answer:"C", explain:"图例专门用来说明地图上各种符号、颜色代表的地理事物；注记则是文字和数字类的说明（如地名、高度数字）。"}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+let currentChapterId = null;
+
+function normalize(text) {
+    if (text === null || text === undefined) return "";
+    return String(text).trim().replace(/\s+/g, "").replace(/　/g, "");
+}
+
+function showHome() {
+    document.getElementById('home-view').style.display = 'block';
+    document.getElementById('chapter-view').style.display = 'none';
+    document.getElementById('section-view').style.display = 'none';
+}
+
+function showChapterList() {
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('chapter-view').style.display = 'block';
+    document.getElementById('section-view').style.display = 'none';
+}
+
+function renderHome() {
+    const list = document.getElementById('chapter-list');
+    list.innerHTML = '';
+    DATA.chapters.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'big-card';
+        btn.innerHTML = `<span><span class="big-card-title">${c.title}</span><div class="big-card-desc">共${c.sections.length}节</div></span><span class="arrow">›</span>`;
+        btn.onclick = () => openChapter(c.id);
+        list.appendChild(btn);
+    });
+}
+
+function openChapter(chapterId) {
+    currentChapterId = chapterId;
+    const chapter = DATA.chapters.find(c => c.id === chapterId);
+    document.getElementById('chapter-title').textContent = chapter.title;
+    const list = document.getElementById('section-list');
+    list.innerHTML = '';
+    chapter.sections.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'big-card';
+        btn.innerHTML = `<span><span class="big-card-title">${s.title}</span><div class="big-card-desc">${s.notes.length}个知识点 · ${s.quiz.length}道练习题</div></span><span class="arrow">›</span>`;
+        btn.onclick = () => openSection(chapterId, s.id);
+        list.appendChild(btn);
+    });
+    showChapterList();
+}
+
+function openSection(chapterId, sectionId) {
+    const chapter = DATA.chapters.find(c => c.id === chapterId);
+    const section = chapter.sections.find(s => s.id === sectionId);
+
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('chapter-view').style.display = 'none';
+    document.getElementById('section-view').style.display = 'block';
+    document.getElementById('section-title').textContent = section.title;
+    document.getElementById('section-back-btn').onclick = () => openChapter(chapterId);
+
+    renderNotes(section);
+    renderQuiz(section);
+    switchTab('notes');
+}
+
+function switchTab(tab) {
+    document.getElementById('tab-notes-btn').classList.toggle('active', tab === 'notes');
+    document.getElementById('tab-quiz-btn').classList.toggle('active', tab === 'quiz');
+    document.getElementById('notes-panel').style.display = tab === 'notes' ? 'block' : 'none';
+    document.getElementById('quiz-panel').style.display = tab === 'quiz' ? 'block' : 'none';
+}
+
+function renderNotes(section) {
+    const panel = document.getElementById('notes-panel');
+    panel.innerHTML = '';
+    section.notes.forEach(n => {
+        const card = document.createElement('div');
+        card.className = 'point-card';
+        card.innerHTML = `
+            <div class="point-title">${n.point}</div>
+            <div class="rule-box">${n.explain}</div>
+            <div class="example-box"><span class="example-tag">例子</span><div>${n.example}</div></div>
+        `;
+        panel.appendChild(card);
+    });
+}
+
+function renderQuiz(section) {
+    const form = document.getElementById('quiz-form');
+    form.innerHTML = '';
+    section.quiz.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.dataset.qid = q.id;
+
+        let inner = `
+            <div class="question-head">
+                <span class="q-index">第 ${idx + 1} 题</span>
+                <span class="q-tag">${q.point}</span>
+            </div>
+            <div class="q-stem">${q.stem}</div>
+        `;
+
+        if (q.type === 'choice') {
+            inner += '<div class="options">';
+            q.options.forEach(opt => {
+                const letter = opt[0];
+                inner += `<label class="option"><input type="radio" name="q${q.id}" value="${letter}"><span>${opt}</span></label>`;
+            });
+            inner += '</div>';
+        } else if (q.type === 'judge') {
+            inner += `<div class="options">
+                <label class="option"><input type="radio" name="q${q.id}" value="对"><span>对</span></label>
+                <label class="option"><input type="radio" name="q${q.id}" value="错"><span>错</span></label>
+            </div>`;
+        } else if (q.type === 'fill') {
+            inner += `<input type="text" class="fill-input" name="q${q.id}" placeholder="在此填写答案">`;
+        }
+
+        inner += `<div class="feedback" id="feedback-${q.id}"></div>`;
+        card.innerHTML = inner;
+        form.appendChild(card);
+    });
+
+    document.getElementById('score-panel').style.display = 'none';
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '交卷';
+    submitBtn.onclick = () => gradeQuiz(section);
+}
+
+function gradeQuiz(section) {
+    const form = document.getElementById('quiz-form');
+    const formData = new FormData(form);
+    const answers = {};
+    for (const [key, value] of formData.entries()) {
+        answers[key.replace('q', '')] = value;
+    }
+
+    let correctCount = 0;
+    section.quiz.forEach(q => {
+        const userAnswer = answers[String(q.id)] || '';
+        let isCorrect, displayAnswer;
+
+        if (q.type === 'fill') {
+            const accepted = Array.isArray(q.answer) ? q.answer : [q.answer];
+            isCorrect = accepted.map(normalize).includes(normalize(userAnswer));
+            displayAnswer = accepted[0];
+        } else {
+            isCorrect = normalize(userAnswer) === normalize(q.answer);
+            displayAnswer = q.answer;
+        }
+
+        if (isCorrect) correctCount++;
+
+        const card = document.querySelector(`.question-card[data-qid="${q.id}"]`);
+        card.classList.remove('correct', 'wrong');
+        card.classList.add(isCorrect ? 'correct' : 'wrong');
+        const fb = document.getElementById(`feedback-${q.id}`);
+        fb.innerHTML = `
+            <div class="fb-line">你的答案：${userAnswer || '（未作答）'}　${isCorrect ? '✅' : '❌ 正确答案：' + displayAnswer}</div>
+            <div class="fb-explain">${q.explain}</div>
+        `;
+    });
+
+    const total = section.quiz.length;
+    const score = Math.round(correctCount / total * 100);
+    const panel = document.getElementById('score-panel');
+    panel.style.display = 'block';
+    panel.querySelector('.score-number').textContent = `${score} 分`;
+    panel.querySelector('.score-detail').textContent = `共 ${total} 题，答对 ${correctCount} 题`;
+
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').textContent = '已交卷';
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+
+renderHome();
+showHome();
+</script>
+</body>
+</html>

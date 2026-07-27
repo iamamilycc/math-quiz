@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>七年级生物 - 人教版</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #222;
+}
+.page { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 21px; margin: 8px 0 4px; }
+.subtitle { color: #777; font-size: 14px; margin: 0 0 20px; }
+.back-link { display: inline-block; color: #3a6df0; text-decoration: none; font-size: 14px; margin-bottom: 12px; background: none; border: none; padding: 0; cursor: pointer; }
+
+.card-list { display: flex; flex-direction: column; gap: 12px; }
+.big-card {
+    display: flex; justify-content: space-between; align-items: center;
+    background: white; border-radius: 12px; padding: 18px 20px;
+    text-decoration: none; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: none; width: 100%; font-size: 16px; text-align: left; cursor: pointer;
+    border-left: 4px solid #e8a33d;
+}
+.big-card-title { font-size: 16px; font-weight: 600; }
+.big-card-desc { font-size: 12px; color: #999; margin-top: 3px; }
+.arrow { color: #bbb; font-size: 20px; }
+
+.tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; background: white;
+    color: #666; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.tab-btn.active { background: #e8a33d; color: white; }
+
+.point-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.point-title { font-size: 15.5px; font-weight: 700; margin: 0 0 8px; color: #a0651e; }
+.rule-box {
+    background: #fef6ea; border-left: 3px solid #e8a33d; padding: 10px 12px; border-radius: 8px;
+    font-size: 14px; line-height: 1.7; margin-bottom: 10px;
+}
+.example-box {
+    background: #f7f8fa; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.7;
+}
+.example-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; color: white;
+    background: #3a6df0; padding: 1px 8px; border-radius: 8px; margin-bottom: 6px;
+}
+
+.question-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid transparent;
+}
+.question-card.correct { border-left-color: #2ecc71; background: #f3fdf6; }
+.question-card.wrong { border-left-color: #e74c3c; background: #fdf3f3; }
+.question-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.q-index { font-size: 13px; color: #999; }
+.q-tag { font-size: 12px; color: #a0651e; background: #fef6ea; padding: 2px 8px; border-radius: 10px; }
+.q-stem { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f7f8fa; border-radius: 8px; font-size: 14px; }
+.option input { width: 18px; height: 18px; }
+.fill-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.feedback { margin-top: 10px; font-size: 13px; line-height: 1.7; }
+.fb-line { font-weight: 600; margin-bottom: 6px; }
+.fb-explain { color: #555; background: #f7f8fa; padding: 10px 12px; border-radius: 8px; }
+#submit-btn {
+    display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+    color: white; background: #e8a33d; border: none; border-radius: 10px; margin-top: 10px;
+}
+#submit-btn:disabled { background: #aaa; }
+.score-panel { text-align: center; background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.score-number { font-size: 36px; font-weight: 700; color: #e8a33d; }
+.score-detail { color: #666; margin: 8px 0 16px; }
+
+#home-view, #chapter-view, #section-view { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div id="home-view">
+    <a class="back-link" href="index.html">‹ 返回科目选择</a>
+    <h1>七年级上册生物</h1>
+    <p class="subtitle">人教版 · 选一章开始学习</p>
+    <div class="card-list" id="chapter-list"></div>
+</div>
+
+<div id="chapter-view">
+    <button class="back-link" onclick="showHome()">‹ 返回章节列表</button>
+    <h1 id="chapter-title"></h1>
+    <p class="subtitle">选一节，先看讲解再做练习</p>
+    <div class="card-list" id="section-list"></div>
+</div>
+
+<div id="section-view">
+    <button class="back-link" id="section-back-btn">‹ 返回本章节列表</button>
+    <h1 id="section-title"></h1>
+    <div class="tab-bar">
+        <button class="tab-btn active" id="tab-notes-btn" onclick="switchTab('notes')">📖 知识点讲解</button>
+        <button class="tab-btn" id="tab-quiz-btn" onclick="switchTab('quiz')">✏️ 课后练习</button>
+    </div>
+    <div id="notes-panel"></div>
+    <div id="quiz-panel" style="display:none;">
+        <form id="quiz-form"></form>
+        <button type="button" id="submit-btn">交卷</button>
+        <div id="score-panel" class="score-panel" style="display:none;">
+            <div class="score-number"></div>
+            <div class="score-detail"></div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+const DATA = {
+  chapters: [
+    {
+      id: "b-c1", title: "第一章 认识生物",
+      sections: [
+        {
+          id: "b-c1-s1", title: "第一节 观察周边环境中的生物",
+          notes: [
+            {point: "生物与非生物的区别", explain: "生物是有生命的物体，具有生命现象，比如能生长、能繁殖后代、需要营养和呼吸；非生物没有这些生命现象，比如石头、机器人、云。",
+             example: "一棵小树会生长、开花结果（繁殖），它是生物；而一块石头不会长大也不会繁殖，它是非生物。"},
+            {point: "观察法——科学探究的基本方法之一", explain: "观察是用眼睛、放大镜、显微镜等工具，实事求是地记录看到的现象，观察要全面、细致、真实，不能凭想象添加内容。",
+             example: "观察蚂蚁的活动时，要如实记录蚂蚁的数量、大小、行为，而不能只凭印象随便写“蚂蚁很多、很聪明”这种不够客观的描述。"},
+            {point: "调查法——了解身边生物的常用方法", explain: "调查是为了了解某种事物的情况而进行的有计划、有步骤的活动。调查前要明确调查目的和调查对象，制定合理的调查方案，调查时要如实记录，最后要对调查结果进行整理和分析。",
+             example: "调查校园里有多少种植物，需要先确定调查范围（比如整个校园）、准备记录表，再实地一种一种地记录下来，最后统计整理成一份报告。"}
+          ],
+          quiz: [
+            {id:1, type:"choice", point:"生物与非生物的判断", stem:"下列属于生物的是（　）",
+             options:["A. 珊瑚","B. 钟乳石","C. 机器人","D. 珊瑚礁化石"],
+             answer:"A", explain:"珊瑚是活的生物体（腔肠动物），会生长、摄食；钟乳石、化石、机器人都不具有生命现象，属于非生物。"},
+            {id:2, type:"judge", point:"观察法的原则", stem:"观察时可以适当加入自己的猜测，让记录更完整。",
+             answer:"错", explain:"观察要实事求是，只记录真实看到的现象，不能随意加入主观猜测，这样才能保证观察结果的科学性。"},
+            {id:3, type:"choice", point:"调查法的步骤", stem:"调查某地区植物种类时，最先应该做的是（　）",
+             options:["A. 直接开始统计","B. 明确调查目的和对象","C. 随便走走看看","D. 写调查报告"],
+             answer:"B", explain:"调查的第一步是明确调查目的和对象，然后再制定调查方案，最后实施调查、整理分析，顺序不能颠倒。"},
+            {id:4, type:"fill", point:"生物的本质特征", stem:"判断一个物体是不是生物，最主要看它有没有______现象",
+             answer:["生命"], explain:"生物与非生物最本质的区别就是生物具有生命现象（能生长、繁殖、呼吸、对刺激作反应等），非生物没有。"}
+          ]
+        },
+        {
+          id: "b-c1-s2", title: "第二节 生物的特征",
+          notes: [
+            {point: "① 生物的生活需要营养", explain: "生物体需要不断从外界获取营养物质，来维持自己的生命活动，比如植物通过光合作用制造养分，动物通过摄食获取营养。",
+             example: "牛需要吃草来获取营养，绿色植物通过根吸收水分和无机盐、通过叶片进行光合作用制造有机物，这都是“需要营养”的体现。"},
+            {point: "② 生物能进行呼吸", explain: "绝大多数生物需要吸入氧气、呼出二氧化碳（或者进行其他方式的呼吸），通过呼吸作用获得生命活动所需要的能量。",
+             example: "人和动物通过肺呼吸，鱼通过鳃呼吸，植物则通过叶片和根进行气体交换，这些都是呼吸作用的表现形式。"},
+            {point: "③ 生物能排出身体内产生的废物", explain: "生物在进行生命活动的过程中会产生代谢废物，需要排出体外，比如人通过出汗、呼气、排尿等方式排出废物，植物通过落叶带走一部分废物。",
+             example: "人体出汗、呼出的气体中含有二氧化碳，排出的尿液，都是人体排出代谢废物的方式；植物落叶也能带走一部分体内积累的废物。"},
+            {point: "④ 生物能对外界刺激作出反应", explain: "生物能够感知外界环境的变化（光、声音、温度、触碰等刺激），并作出相应的反应，这是生物适应环境、维持生存的重要能力。",
+             example: "含羞草的叶子被触碰后会很快合拢，这是植物对触碰刺激的反应；人在黑暗中瞳孔会放大，也是对光线刺激的反应。"},
+            {point: "⑤ 生物能生长和繁殖", explain: "生物体能从小长大（生长），并且能产生后代、繁衍延续（繁殖），这是生物的重要特征之一。",
+             example: "一粒种子能发芽、长成一株植物（生长），并且开花结果、产生新的种子（繁殖），延续生命。"},
+            {point: "⑥ 除病毒外，生物一般都是由细胞构成的", explain: "除了病毒这种特殊的生物没有细胞结构外，其他绝大多数生物体，不管是单细胞的细菌，还是多细胞的动植物，都是由细胞构成的，细胞是生物体结构和功能的基本单位。",
+             example: "人体是由许许多多的细胞构成的（皮肤细胞、血细胞、神经细胞等），而像草履虫这样的单细胞生物，整个身体就只有一个细胞。"}
+          ],
+          quiz: [
+            {id:1, type:"choice", point:"对外界刺激作出反应", stem:"含羞草的叶片被触碰后会合拢，这体现了生物的哪一特征（　）",
+             options:["A. 生物能生长和繁殖","B. 生物能对外界刺激作出反应","C. 生物能进行呼吸","D. 生物需要营养"],
+             answer:"B", explain:"含羞草对“触碰”这个外界刺激作出了“合拢”的反应，属于“生物能对外界刺激作出反应”这一特征。"},
+            {id:2, type:"judge", point:"细胞构成的例外(较难易错)", stem:"所有生物都是由细胞构成的，没有例外。",
+             answer:"错", explain:"病毒是一个例外，病毒没有细胞结构，是由蛋白质外壳和内部的遗传物质组成的，不具有细胞结构，这是初中生物里的一个重要考点。"},
+            {id:3, type:"choice", point:"排出代谢废物", stem:"人出汗、呼出二氧化碳，主要体现了生物的哪一特征（　）",
+             options:["A. 生物能生长和繁殖","B. 生物能排出体内产生的废物","C. 生物需要营养","D. 生物能对外界刺激作出反应"],
+             answer:"B", explain:"出汗、呼出二氧化碳都是人体把体内代谢产生的废物排出体外的方式，体现“生物能排出身体内产生的废物”这一特征。"},
+            {id:4, type:"fill", point:"细胞构成的例外", stem:"除______外，生物一般都是由细胞构成的",
+             answer:["病毒"], explain:"病毒是生物界中唯一没有细胞结构的生物，这是一个重要的例外，需要单独记住。"},
+            {id:5, type:"choice", point:"生物特征综合辨析(较难)", stem:"下列现象中，不能体现生物特征的是（　）",
+             options:["A. 小猫会捕食老鼠","B. 松树越长越高","C. 汽车能行驶并排放尾气","D. 向日葵会朝着太阳转动"],
+             answer:"C", explain:"汽车是非生物，虽然会“行驶”和“排放”，但这不是生命活动，不能体现生物特征；A是摄食（营养），B是生长，D是对光刺激的反应，都属于生物特征。"}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+let currentChapterId = null;
+
+function normalize(text) {
+    if (text === null || text === undefined) return "";
+    return String(text).trim().replace(/\s+/g, "").replace(/　/g, "");
+}
+
+function showHome() {
+    document.getElementById('home-view').style.display = 'block';
+    document.getElementById('chapter-view').style.display = 'none';
+    document.getElementById('section-view').style.display = 'none';
+}
+
+function showChapterList() {
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('chapter-view').style.display = 'block';
+    document.getElementById('section-view').style.display = 'none';
+}
+
+function renderHome() {
+    const list = document.getElementById('chapter-list');
+    list.innerHTML = '';
+    DATA.chapters.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'big-card';
+        btn.innerHTML = `<span><span class="big-card-title">${c.title}</span><div class="big-card-desc">共${c.sections.length}节</div></span><span class="arrow">›</span>`;
+        btn.onclick = () => openChapter(c.id);
+        list.appendChild(btn);
+    });
+}
+
+function openChapter(chapterId) {
+    currentChapterId = chapterId;
+    const chapter = DATA.chapters.find(c => c.id === chapterId);
+    document.getElementById('chapter-title').textContent = chapter.title;
+    const list = document.getElementById('section-list');
+    list.innerHTML = '';
+    chapter.sections.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'big-card';
+        btn.innerHTML = `<span><span class="big-card-title">${s.title}</span><div class="big-card-desc">${s.notes.length}个知识点 · ${s.quiz.length}道练习题</div></span><span class="arrow">›</span>`;
+        btn.onclick = () => openSection(chapterId, s.id);
+        list.appendChild(btn);
+    });
+    showChapterList();
+}
+
+function openSection(chapterId, sectionId) {
+    const chapter = DATA.chapters.find(c => c.id === chapterId);
+    const section = chapter.sections.find(s => s.id === sectionId);
+
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('chapter-view').style.display = 'none';
+    document.getElementById('section-view').style.display = 'block';
+    document.getElementById('section-title').textContent = section.title;
+    document.getElementById('section-back-btn').onclick = () => openChapter(chapterId);
+
+    renderNotes(section);
+    renderQuiz(section);
+    switchTab('notes');
+}
+
+function switchTab(tab) {
+    document.getElementById('tab-notes-btn').classList.toggle('active', tab === 'notes');
+    document.getElementById('tab-quiz-btn').classList.toggle('active', tab === 'quiz');
+    document.getElementById('notes-panel').style.display = tab === 'notes' ? 'block' : 'none';
+    document.getElementById('quiz-panel').style.display = tab === 'quiz' ? 'block' : 'none';
+}
+
+function renderNotes(section) {
+    const panel = document.getElementById('notes-panel');
+    panel.innerHTML = '';
+    section.notes.forEach(n => {
+        const card = document.createElement('div');
+        card.className = 'point-card';
+        card.innerHTML = `
+            <div class="point-title">${n.point}</div>
+            <div class="rule-box">${n.explain}</div>
+            <div class="example-box"><span class="example-tag">例子</span><div>${n.example}</div></div>
+        `;
+        panel.appendChild(card);
+    });
+}
+
+function renderQuiz(section) {
+    const form = document.getElementById('quiz-form');
+    form.innerHTML = '';
+    section.quiz.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.dataset.qid = q.id;
+
+        let inner = `
+            <div class="question-head">
+                <span class="q-index">第 ${idx + 1} 题</span>
+                <span class="q-tag">${q.point}</span>
+            </div>
+            <div class="q-stem">${q.stem}</div>
+        `;
+
+        if (q.type === 'choice') {
+            inner += '<div class="options">';
+            q.options.forEach(opt => {
+                const letter = opt[0];
+                inner += `<label class="option"><input type="radio" name="q${q.id}" value="${letter}"><span>${opt}</span></label>`;
+            });
+            inner += '</div>';
+        } else if (q.type === 'judge') {
+            inner += `<div class="options">
+                <label class="option"><input type="radio" name="q${q.id}" value="对"><span>对</span></label>
+                <label class="option"><input type="radio" name="q${q.id}" value="错"><span>错</span></label>
+            </div>`;
+        } else if (q.type === 'fill') {
+            inner += `<input type="text" class="fill-input" name="q${q.id}" placeholder="在此填写答案">`;
+        }
+
+        inner += `<div class="feedback" id="feedback-${q.id}"></div>`;
+        card.innerHTML = inner;
+        form.appendChild(card);
+    });
+
+    document.getElementById('score-panel').style.display = 'none';
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '交卷';
+    submitBtn.onclick = () => gradeQuiz(section);
+}
+
+function gradeQuiz(section) {
+    const form = document.getElementById('quiz-form');
+    const formData = new FormData(form);
+    const answers = {};
+    for (const [key, value] of formData.entries()) {
+        answers[key.replace('q', '')] = value;
+    }
+
+    let correctCount = 0;
+    section.quiz.forEach(q => {
+        const userAnswer = answers[String(q.id)] || '';
+        let isCorrect, displayAnswer;
+
+        if (q.type === 'fill') {
+            const accepted = Array.isArray(q.answer) ? q.answer : [q.answer];
+            isCorrect = accepted.map(normalize).includes(normalize(userAnswer));
+            displayAnswer = accepted[0];
+        } else {
+            isCorrect = normalize(userAnswer) === normalize(q.answer);
+            displayAnswer = q.answer;
+        }
+
+        if (isCorrect) correctCount++;
+
+        const card = document.querySelector(`.question-card[data-qid="${q.id}"]`);
+        card.classList.remove('correct', 'wrong');
+        card.classList.add(isCorrect ? 'correct' : 'wrong');
+        const fb = document.getElementById(`feedback-${q.id}`);
+        fb.innerHTML = `
+            <div class="fb-line">你的答案：${userAnswer || '（未作答）'}　${isCorrect ? '✅' : '❌ 正确答案：' + displayAnswer}</div>
+            <div class="fb-explain">${q.explain}</div>
+        `;
+    });
+
+    const total = section.quiz.length;
+    const score = Math.round(correctCount / total * 100);
+    const panel = document.getElementById('score-panel');
+    panel.style.display = 'block';
+    panel.querySelector('.score-number').textContent = `${score} 分`;
+    panel.querySelector('.score-detail').textContent = `共 ${total} 题，答对 ${correctCount} 题`;
+
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').textContent = '已交卷';
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+
+renderHome();
+showHome();
+</script>
+</body>
+</html>
