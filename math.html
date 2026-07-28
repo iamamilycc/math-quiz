@@ -159,6 +159,31 @@ function openQuiz(chapterId) {
     submitBtn.onclick = () => gradeQuiz(chapterId, questions);
 }
 
+function saveWrongAnswers(subject, chapterTitle, sectionTitle, wrongItems) {
+    if (!wrongItems.length) return;
+    const KEY = 'mathquiz_wrongbook_v1';
+    let book = [];
+    try { book = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { book = []; }
+    const now = new Date().toISOString();
+    wrongItems.forEach(item => {
+        const dedupeKey = subject + '|' + item.point + '|' + item.stem;
+        const existing = book.find(b => b.key === dedupeKey);
+        if (existing) {
+            existing.wrongCount += 1;
+            existing.lastWrongAt = now;
+            existing.userAnswer = item.userAnswer;
+        } else {
+            book.push({
+                key: dedupeKey, subject: subject, chapterTitle: chapterTitle, sectionTitle: sectionTitle || '',
+                point: item.point, stem: item.stem, userAnswer: item.userAnswer,
+                correctAnswer: item.correctAnswer, explain: item.explain,
+                wrongCount: 1, firstWrongAt: now, lastWrongAt: now
+            });
+        }
+    });
+    localStorage.setItem(KEY, JSON.stringify(book));
+}
+
 function gradeQuiz(chapterId, questions) {
     const form = document.getElementById('quiz-form');
     const formData = new FormData(form);
@@ -168,6 +193,7 @@ function gradeQuiz(chapterId, questions) {
     }
 
     let correctCount = 0;
+    const wrongItems = [];
     questions.forEach(q => {
         const userAnswer = answers[String(q.id)] || '';
         let isCorrect, displayAnswer;
@@ -182,6 +208,7 @@ function gradeQuiz(chapterId, questions) {
         }
 
         if (isCorrect) correctCount++;
+        else wrongItems.push({point: q.point, stem: q.stem, userAnswer: userAnswer || '（未作答）', correctAnswer: displayAnswer, explain: q.explain});
 
         const card = document.querySelector(`.question-card[data-qid="${q.id}"]`);
         card.classList.remove('correct', 'wrong');
@@ -192,6 +219,9 @@ function gradeQuiz(chapterId, questions) {
             <div class="fb-explain">${q.explain}</div>
         `;
     });
+
+    const chapterTitle = (DATA.chapters.find(c => c.id === chapterId) || {}).title || chapterId;
+    saveWrongAnswers('math', chapterTitle, '', wrongItems);
 
     const total = questions.length;
     const score = Math.round(correctCount / total * 100);
