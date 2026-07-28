@@ -45,13 +45,60 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 .example-body { color: #333; }
 .example-body .wrong { color: #e74c3c; text-decoration: line-through; }
 .example-body .right { color: #2ecc71; font-weight: 600; }
+
+.flip-card { cursor: pointer; user-select: none; margin-bottom: 8px; }
+.flip-front {
+    background: #fff8e6; border: 1.5px dashed #e8a33d; border-radius: 8px; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 13.5px;
+}
+.flip-front .flip-hint { color: #a0651e; font-weight: 600; }
+.flip-front .flip-icon { font-size: 12px; color: #e8a33d; white-space: nowrap; }
+.flip-back { display: none; }
+.flip-card.flipped .flip-front { display: none; }
+.flip-card.flipped .flip-back { display: block; }
+
+.think-box {
+    background: #f3ecff; border-left: 3px solid #8b5cf6; padding: 10px 12px; border-radius: 8px;
+    font-size: 13.5px; line-height: 1.7; margin-top: 10px; color: #4c3575;
+}
+.think-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; color: white;
+    background: #8b5cf6; padding: 1px 8px; border-radius: 8px; margin-bottom: 6px;
+}
+
+.quiz-section-title { font-size: 19px; font-weight: 700; margin: 28px 0 6px; }
+.question-card {
+    background: white; border-radius: 12px; padding: 16px 16px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid transparent;
+}
+.question-card.correct { border-left-color: #2ecc71; background: #f3fdf6; }
+.question-card.wrong { border-left-color: #e74c3c; background: #fdf3f3; }
+.question-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.q-index { font-size: 13px; color: #999; }
+.q-tag { font-size: 12px; color: #3a6df0; background: #eaf0ff; padding: 2px 8px; border-radius: 10px; }
+.q-stem { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f7f8fa; border-radius: 8px; font-size: 14px; }
+.option input { width: 18px; height: 18px; }
+.feedback { margin-top: 10px; font-size: 13px; line-height: 1.7; }
+.fb-line { font-weight: 600; margin-bottom: 6px; }
+.fb-explain { color: #555; background: #f7f8fa; padding: 10px 12px; border-radius: 8px; }
+#submit-btn {
+    display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+    color: white; background: #3a6df0; border: none; border-radius: 10px; margin-top: 10px;
+}
+#submit-btn:disabled { background: #aaa; }
+.score-panel { text-align: center; background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.score-number { font-size: 36px; font-weight: 700; color: #3a6df0; }
+.score-detail { color: #666; margin: 8px 0 16px; }
 </style>
 </head>
 <body>
 <div class="page">
 <a class="back-link" href="math.html">‹ 返回数学首页</a>
 <h1>第三章 整式及其加减 - 知识点讲解</h1>
-<p class="subtitle">9个核心知识点，每个配基础/进阶/易错三个例子，看完可以去做「第三章」或「强化练习」检验</p>
+<p class="subtitle">9个核心知识点，每个配基础/进阶/易错三个例子+想一想，看完往下做课后测验检验</p>
 
 <div class="point-card">
 <span class="point-num">知识点 1</span>
@@ -62,8 +109,12 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 <b>次数</b>：单项式里所有字母指数加起来的和。
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">-4x³y：系数是 -4（带着负号一起看），次数是 3+1=4。</div></div>
-<div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">单项式 x：其实是 1×x，系数是隐藏的 1，次数是 1，不是"没有系数"。</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">单项式 -x²：<span class="wrong">✗ 系数是2</span> → <span class="right">✓ 系数是 -1</span>（因为 -x² 就是 -1×x²，负号一定要算进系数里，次数是2）。</div></div>
+<div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">单项式 x：其实是 1×x，系数是隐藏的 1，次数是 1，不是“没有系数”。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 单项式 -x² 的系数是多少？你确定吗？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">单项式 -x²：<span class="wrong">✗ 系数是2</span> → <span class="right">✓ 系数是 -1</span>（因为 -x² 就是 -1×x²，负号一定要算进系数里，次数是2）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>如果一个单项式写成"3"（没有任何字母），它的次数是多少？系数又是多少？"没有字母"是不是代表它不算单项式？</div></div>
 </div>
 
 <div class="point-card">
@@ -76,7 +127,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">3x²-5x+2 是三项式（3x²、-5x、2 三项），次数是2。</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">2x³y-3xy²+7：三项次数分别是4、3、0，多项式次数取最高的 4。</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">-x+3-2x²：<span class="wrong">✗ 以为第一项是"x"</span> → <span class="right">✓ 第一项其实是"-x"</span>（符号是这一项的一部分，不能丢掉）。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 -x+3-2x² 的第一项是"x"吗？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">-x+3-2x²：<span class="wrong">✗ 以为第一项是"x"</span> → <span class="right">✓ 第一项其实是"-x"</span>（符号是这一项的一部分，不能丢掉）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>如果去掉多项式 -x+3-2x² 里所有的正负号，只看数字和字母，会不会影响对这个多项式的正确理解？为什么？</div></div>
 </div>
 
 <div class="point-card">
@@ -87,7 +142,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">3x²y 与 -5x²y 是同类项：字母都是x、y，x都是2次、y都是1次。</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">-5m²n 与 7nm² 是同类项：字母写的顺序不一样（一个m在前一个n在前），但字母和指数完全对应，顺序不影响判断。</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">2x²y 与 2xy²：<span class="wrong">✗ 以为是同类项（因为都有x和y）</span> → <span class="right">✓ 不是同类项</span>（x、y的指数刚好互换了：一个是x²y¹，一个是x¹y²，指数不同）。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 2x²y 与 2xy² 是同类项吗？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">2x²y 与 2xy²：<span class="wrong">✗ 以为是同类项（因为都有x和y）</span> → <span class="right">✓ 不是同类项</span>（x、y的指数刚好互换了：一个是x²y¹，一个是x¹y²，指数不同）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>-5m²n 与 7nm² 的字母顺序不一样，会不会因此不是同类项？判断同类项到底要不要看字母写的先后顺序？</div></div>
 </div>
 
 <div class="point-card">
@@ -98,7 +157,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">3a-5b+2a-b = (3+2)a+(-5-1)b = 5a-6b</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">5x²-3x²+x² = (5-3+1)x² = 3x²（最后单独的"x²"其实系数是1，很多人漏加这个1）</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">2a²b + a²b：<span class="wrong">✗ 算成 2a²b+a²b²（把字母部分也相加了）</span> → <span class="right">✓ 3a²b</span>（只有系数相加，字母和指数原样照抄，不能动）。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 2a²b + a²b 该怎么合并？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">2a²b + a²b：<span class="wrong">✗ 算成 2a²b+a²b²（把字母部分也相加了）</span> → <span class="right">✓ 3a²b</span>（只有系数相加，字母和指数原样照抄，不能动）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>化简 5x²-3x²+x² 时，如果漏掉最后单独的"x²"（以为它没有系数、不用管），会得到什么错误结果？为什么这是常见错误？</div></div>
 </div>
 
 <div class="point-card">
@@ -109,7 +172,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">a+(b-c) = a+b-c（前面是+号，括号里照抄）</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">a-(b-c+d) = a-b+c-d（前面是-号，b变成-b，c变成+c，d变成-d，每一项都要变）</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">-(2x-3y)：<span class="wrong">✗ 算成 -2x-3y（只把第一项变号）</span> → <span class="right">✓ -2x+3y</span>（第二项的"-3y"也要变号，变成"+3y"，两项都要变，不能只变一个）。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 -(2x-3y) 去括号后是多少？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">-(2x-3y)：<span class="wrong">✗ 算成 -2x-3y（只把第一项变号）</span> → <span class="right">✓ -2x+3y</span>（第二项的"-3y"也要变号，变成"+3y"，两项都要变，不能只变一个）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>-(2x-3y) 如果只把第一项变号、忘记第二项也要变号，会算出什么错误答案？括号前的符号到底决定了哪些项要变号？</div></div>
 </div>
 
 <div class="point-card">
@@ -120,7 +187,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">(2x²+3x-1)-(x²-2x+4) = 2x²+3x-1-x²+2x-4 = x²+5x-5</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">3x-[5x-2(x-1)+3]：先算最内层 2(x-1)=2x-2，代回去变成 3x-[5x-2x+2+3]=3x-[3x+5]=-5（由内向外拆，一层层来）</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">(5a²-3a+2)+(-2a²+3a-2)：<span class="wrong">✗ 漏看一次项和常数项抵消，多写成"3a²-6a+4"</span> → <span class="right">✓ 3a²</span>（一次项 -3a+3a=0，常数项 2-2=0，恰好都抵消为0，结果只剩3a²，不用写+0a+0）。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 (5a²-3a+2)+(-2a²+3a-2) 算完会不会漏看什么？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">(5a²-3a+2)+(-2a²+3a-2)：<span class="wrong">✗ 漏看一次项和常数项抵消，多写成"3a²-6a+4"</span> → <span class="right">✓ 3a²</span>（一次项 -3a+3a=0，常数项 2-2=0，恰好都抵消为0，结果只剩3a²，不用写+0a+0）。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>(5a²-3a+2)+(-2a²+3a-2) 算完后一次项和常数项都抵消为0，这时候要不要把"+0a+0"写进最终答案里？</div></div>
 </div>
 
 <div class="point-card">
@@ -131,7 +202,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">已知 a-b=3，求 2a-2b-5 的值：2a-2b-5 = 2(a-b)-5 = 2×3-5 = 1</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">已知 2x-3y=7，求 4x-6y-10 的值：先看出 4x-6y 正好是 2x-3y 的2倍，所以=2×7-10=4</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">已知 3x+2y=9，求 6x+4y-5 的值：<span class="wrong">✗ 想先求出x和y各是多少</span> → <span class="right">✓ 一个方程两个未知数，根本求不出x、y各自的值</span>，正确做法是看出 6x+4y=2×(3x+2y)=18，直接代入算：18-5=13。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 已知 3x+2y=9，能先求出x、y各是多少吗？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">已知 3x+2y=9，求 6x+4y-5 的值：<span class="wrong">✗ 想先求出x和y各是多少</span> → <span class="right">✓ 一个方程两个未知数，根本求不出x、y各自的值</span>，正确做法是看出 6x+4y=2×(3x+2y)=18，直接代入算：18-5=13。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>已知3x+2y=9，能不能先求出x和y各自的值，再代入6x+4y-5计算？为什么整体代入法反而更好用？</div></div>
 </div>
 
 <div class="point-card">
@@ -142,7 +217,11 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">若 3x²-2x+mx²+1 不含x²项：合并后是 (3+m)x²-2x+1，令 3+m=0，解得 m=-3</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">若 ax²+bx+3 与 -2x²+5x+c 的和不含二次项和一次项：相加后是 (a-2)x²+(b+5)x+(3+c)，令 a-2=0 得 a=2，令 b+5=0 得 b=-5（两个条件分开列两个方程）</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body"><span class="wrong">✗ 把"不含某项"理解成"这一项的值等于0"（代入具体x去算）</span> → <span class="right">✓ 应该是"这一项的系数等于0"</span>，因为整式加减是恒等式，对任何x都成立，只有系数为0才能保证这一项永远消失，不是代入某个特定的x。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 "不含某项"到底是什么意思？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body"><span class="wrong">✗ 把"不含某项"理解成"这一项的值等于0"（代入具体x去算）</span> → <span class="right">✓ 应该是"这一项的系数等于0"</span>，因为整式加减是恒等式，对任何x都成立，只有系数为0才能保证这一项永远消失，不是代入某个特定的x。</div></div></div>
+</div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>"代数式不含x²项"，是不是等于"把某个具体的x值代进去，算出来结果是0"？这两种理解一样吗？</div></div>
 </div>
 
 <div class="point-card">
@@ -153,8 +232,89 @@ h1 { font-size: 21px; margin: 8px 0 4px; }
 </div>
 <div class="example"><span class="example-tag tag-basic">基础</span><div class="example-body">长方形长(2a+3)、宽(a-1)：周长=2×[(2a+3)+(a-1)]=2×(3a+2)=6a+4</div></div>
 <div class="example"><span class="example-tag tag-advanced">进阶</span><div class="example-body">正方体棱长(2a-1)：正方体共12条棱且长度相等，棱长总和=12×(2a-1)=24a-12</div></div>
-<div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">三角形三边(2a+1)、(3a-2)、(a+5)：<span class="wrong">✗ 看到"周长"习惯性套长方形公式乘以2</span> → <span class="right">✓ 三角形周长就是三边直接相加</span>，(2a+1)+(3a-2)+(a+5)=6a+4，没有"乘2"这一步，不同图形的周长公式不一样，不能照搬。</div></div>
+<div class="flip-card" onclick="this.classList.toggle('flipped')">
+  <div class="flip-front"><span class="flip-hint">🤔 三角形的周长也是"2×(长+宽)"吗？点击查看</span><span class="flip-icon">点击 ›</span></div>
+  <div class="flip-back"><div class="example wrong-compare"><span class="example-tag tag-error">易错</span><div class="example-body">三角形三边(2a+1)、(3a-2)、(a+5)：<span class="wrong">✗ 看到"周长"习惯性套长方形公式乘以2</span> → <span class="right">✓ 三角形周长就是三边直接相加</span>，(2a+1)+(3a-2)+(a+5)=6a+4，没有"乘2"这一步，不同图形的周长公式不一样，不能照搬。</div></div></div>
 </div>
+<div class="think-box"><span class="think-tag">🤔 想一想</span><div>长方形和三角形的周长公式为什么不一样？看到"周长"这两个字，能不能不管什么图形都直接套"2×(长+宽)"？</div></div>
+</div>
+
+<div class="quiz-section-title">✏️ 课后测验（9题多选，把上面的"想一想"变成考题）</div>
+<p class="subtitle">每题可能有多个正确选项，要选全对才算对</p>
+<form id="quiz-form"></form>
+<button type="button" id="submit-btn">交卷</button>
+<div id="score-panel" class="score-panel" style="display:none;">
+    <div class="score-number"></div>
+    <div class="score-detail"></div>
+</div>
+
+<script>
+const QUIZ = [{"id": 1, "point": "单项式的系数与次数", "stem": "如果一个单项式写成“3”（没有任何字母），下列说法正确的有（可多选）（　）", "options": ["A. 系数是3", "B. 次数是0（因为没有字母，相当于所有字母的指数都是0）", "C. 因为没有字母，这个式子根本不算单项式", "D. 常数本身也算作单项式的一种（0次单项式）"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确：常数本身就是单项式的特例，系数是它本身，次数是0；C是错误的，常数虽然没有字母，但依然算单项式，不能因为“没有字母”就否定它是单项式。"}, {"id": 2, "point": "多项式的项数与次数", "stem": "如果去掉多项式 -x+3-2x² 里所有的正负号，只看数字和字母，下列说法正确的有（可多选）（　）", "options": ["A. 会影响，因为符号是“项”的一部分，去掉符号可能让人以为第一项是“x”而不是“-x”", "B. 不会影响，反正数字和字母都还在，怎么理解都一样", "C. 正确的做法是每一项都要连着它前面的符号一起看，才能保证不出错", "D. 这提醒我们，写多项式或读多项式的时候，符号绝对不能丢"], "answer": ["A", "C", "D"], "explain": "A、C、D都强调了符号是“项”不可分割的一部分；B是错误的，去掉符号后完全可能理解错哪一项是正的、哪一项是负的，这是多项式最容易出错的细节之一。"}, {"id": 3, "point": "同类项的判断", "stem": "-5m²n 与 7nm² 的字母顺序不一样，关于它们是否是同类项，下列说法正确的有（可多选）（　）", "options": ["A. 字母的书写顺序不影响是否是同类项的判断", "B. 只要相同字母的指数分别相同，顺序不同也是同类项", "C. 顺序不同说明两个单项式本质上就不一样，肯定不是同类项", "D. 判断同类项时，把每个字母的指数单独比较清楚，跟书写顺序无关"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确：同类项只看“字母+对应指数”是否相同，跟写的先后顺序完全没关系；C是错误的常见误解，把“顺序不同”错误地当成“不是同类项”的理由。"}, {"id": 4, "point": "合并同类项", "stem": "化简 5x²-3x²+x² 时，关于最后单独的“x²”，下列说法正确的有（可多选）（　）", "options": ["A. 漏掉最后的x²会算成2x²，而不是正确答案3x²", "B. 单独写的字母（没有数字在前面）其实系数隐藏着1，很容易被忽略", "C. 因为最后那项没写系数，所以它就不参与合并，可以直接忽略", "D. 这提醒我们同类项合并前，要把每一项系数都找出来，包括隐藏的1和-1"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确指出了这个常见错误的来源和后果；C是错误的，没写系数不代表系数是0或者可以忽略，恰恰相反，它的系数是隐藏的1，必须参与合并计算。"}, {"id": 5, "point": "去括号法则", "stem": "-(2x-3y) 如果只把第一项变号、忘记第二项也要变号，下列说法正确的有（可多选）（　）", "options": ["A. 会错误地算成 -2x-3y", "B. 正确答案应该是 -2x+3y，两项都要变号", "C. 只要前面是负号，只需要变第一项的符号就够了", "D. 括号前面的符号（正负号）决定了里面“每一项”要不要变号，不是只看第一项"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确描述了这个错误的表现和正确做法；C是错误的，括号前是负号时，括号里的每一项都要变号，不能只变第一项。"}, {"id": 6, "point": "整式的加减综合应用", "stem": "(5a²-3a+2)+(-2a²+3a-2) 计算完后一次项和常数项都抵消为0，下列说法正确的有（可多选）（　）", "options": ["A. 不需要，0加或减都不影响结果，直接省略就好", "B. 结果直接写成3a²就是最简形式", "C. 应该写成“3a²+0a+0”才算完整，不能省略", "D. 抵消为0的项属于化简过程中的正常结果，被省略是合理的"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确：抵消为0的项在最简形式里本来就该省略；C是错误的，“3a²+0a+0”不是最简形式，加减0的项不需要保留。"}, {"id": 7, "point": "整体代入求值", "stem": "已知3x+2y=9，关于能不能先求出x和y各自的值，下列说法正确的有（可多选）（　）", "options": ["A. 一个方程有两个未知数，通常无法求出x、y各自唯一的值", "B. 只要能看出目标式子和已知条件是倍数关系，就可以直接整体代入，不需要求出每个字母", "C. 只要多试几个数字，随便就能求出x和y具体是多少", "D. 整体代入法的核心，是把“已知的整个式子”当作一个数直接代入计算"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确：一个方程两个未知数确实无法唯一确定x、y，整体代入法正是为了绕开这个困难；C是错误的，“随便试”并不能得到唯一确定的x、y值，这个方程有无数组解。"}, {"id": 8, "point": "待定系数法", "stem": "“代数式不含x²项”，关于这句话的含义，下列说法正确的有（可多选）（　）", "options": ["A. 不是“代入某个具体x算出0”，而是这一项的系数恒为0", "B. 因为整式相等是对所有x都成立的恒等式，只有系数为0才能保证任何x代入这一项都消失", "C. 只要代入x=0算出结果是0，就能确定不含x²项", "D. 判断“不含某项”要看合并同类项后的系数，而不是代入特定数值"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确点出了“不含某项”的本质是系数为0；C是错误的，代入x=0永远会让x²项等于0（不管系数是多少），这不能说明“不含x²项”，这是很多同学会犯的逻辑错误。"}, {"id": 9, "point": "整式加减的实际应用", "stem": "长方形和三角形的周长公式不一样，下列说法正确的有（可多选）（　）", "options": ["A. 不能，“2×(长+宽)”是长方形专属的周长公式，其他图形不适用", "B. 三角形周长就是三条边直接相加，没有“乘2”这一步", "C. 只要看到“周长”两个字，就统一用“2×(长+宽)”来算最保险", "D. 不同几何图形的周长/棱长计算方法要根据图形本身的性质来定，不能生搬硬套"], "answer": ["A", "B", "D"], "explain": "A、B、D都正确：不同图形的周长公式本来就不一样，要按图形本身的边数、性质来计算；C是错误的，生搬硬套“2×(长+宽)”到三角形等其他图形上会算错。"}];
+
+function normalize(text) {
+    if (text === null || text === undefined) return "";
+    return String(text).trim();
+}
+
+function renderQuiz() {
+    const form = document.getElementById('quiz-form');
+    form.innerHTML = '';
+    QUIZ.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.dataset.qid = q.id;
+        let inner = `
+            <div class="question-head">
+                <span class="q-index">第 ${idx + 1} 题</span>
+                <span class="q-tag">${q.point}</span>
+            </div>
+            <div class="q-stem">${q.stem}</div>
+            <div class="options">
+        `;
+        q.options.forEach(opt => {
+            const letter = opt[0];
+            inner += `<label class="option"><input type="checkbox" name="q${q.id}" value="${letter}"><span>${opt}</span></label>`;
+        });
+        inner += `</div><div class="feedback" id="feedback-${q.id}"></div>`;
+        card.innerHTML = inner;
+        form.appendChild(card);
+    });
+}
+
+function gradeQuiz() {
+    const form = document.getElementById('quiz-form');
+    const formData = new FormData(form);
+    let correctCount = 0;
+    QUIZ.forEach(q => {
+        const userLetters = formData.getAll(`q${q.id}`).sort();
+        const correctLetters = [...q.answer].sort();
+        const isCorrect = JSON.stringify(userLetters) === JSON.stringify(correctLetters);
+        if (isCorrect) correctCount++;
+
+        const card = document.querySelector(`.question-card[data-qid="${q.id}"]`);
+        card.classList.remove('correct', 'wrong');
+        card.classList.add(isCorrect ? 'correct' : 'wrong');
+        const fb = document.getElementById(`feedback-${q.id}`);
+        fb.innerHTML = `
+            <div class="fb-line">你的答案：${userLetters.length ? userLetters.join('、') : '（未作答）'}　${isCorrect ? '✅' : '❌ 正确答案：' + q.answer.join('、')}</div>
+            <div class="fb-explain">${q.explain}</div>
+        `;
+    });
+
+    const total = QUIZ.length;
+    const score = Math.round(correctCount / total * 100);
+    const panel = document.getElementById('score-panel');
+    panel.style.display = 'block';
+    panel.querySelector('.score-number').textContent = `${score} 分`;
+    panel.querySelector('.score-detail').textContent = `共 ${total} 题，答对 ${correctCount} 题`;
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').textContent = '已交卷';
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+
+document.getElementById('submit-btn').onclick = gradeQuiz;
+renderQuiz();
+</script>
 
 </div>
 </body>
