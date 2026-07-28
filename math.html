@@ -182,6 +182,8 @@ function saveWrongAnswers(subject, chapterTitle, sectionTitle, wrongItems) {
         }
     });
     localStorage.setItem(KEY, JSON.stringify(book));
+    localStorage.setItem('mathquiz_updatedAt', String(Date.now()));
+    if (window.MQSYNC) window.MQSYNC.schedule();
 }
 
 function gradeQuiz(chapterId, questions) {
@@ -238,5 +240,6 @@ function gradeQuiz(chapterId, questions) {
 renderHome();
 showHome();
 </script>
+<script src="assets/sync.js"></script>
 </body>
 </html>

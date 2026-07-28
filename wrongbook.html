@@ -65,6 +65,8 @@ h1 { font-size: 20px; margin: 6px 0 4px; }
 <h1>📓 错题本</h1>
 <p class="subtitle">做题交卷后自动收集，只保存在这台设备的浏览器里；反复做错的题会一直保留提醒复习</p>
 
+<div id="mqSyncCard"></div>
+
 <div class="toolbar">
     <button class="btn" id="copy-btn">📋 复制错题清单</button>
     <button class="btn secondary" id="sort-btn">按错误次数排序</button>
@@ -87,6 +89,8 @@ function loadBook() {
 
 function saveBook(book) {
     localStorage.setItem(KEY, JSON.stringify(book));
+    localStorage.setItem('mathquiz_updatedAt', String(Date.now()));
+    if (window.MQSYNC) window.MQSYNC.schedule();
 }
 
 function render() {
@@ -170,6 +174,8 @@ document.getElementById('sort-btn').onclick = () => {
 document.getElementById('clear-btn').onclick = () => {
     if (!confirm('确定要清空全部错题记录吗？此操作无法恢复。')) return;
     localStorage.removeItem(KEY);
+    localStorage.setItem('mathquiz_updatedAt', String(Date.now()));
+    if (window.MQSYNC) window.MQSYNC.schedule();
     render();
 };
 
@@ -193,6 +199,8 @@ document.getElementById('copy-btn').onclick = () => {
 };
 
 render();
+window.MQSYNC_ONRESTORE = function () { render(); };
 </script>
+<script src="assets/sync.js"></script>
 </body>
 </html>
