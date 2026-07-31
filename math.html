@@ -87,7 +87,7 @@ const DATA = {"chapters": [{"id": "ch1", "title": "第一章 丰富的图形世�
 
 function normalize(text) {
     if (text === null || text === undefined) return "";
-    return String(text).trim().replace(/\s+/g, "").replace(/　/g, "");
+    return String(text).trim().replace(/\s+/g, "").replace(/　/g, "").toLowerCase();
 }
 
 function showHome() {
@@ -144,7 +144,7 @@ function openQuiz(chapterId) {
                 <label class="option"><input type="radio" name="q${q.id}" value="错"><span>错</span></label>
             </div>`;
         } else if (q.type === 'fill') {
-            inner += `<input type="text" class="fill-input" name="q${q.id}" placeholder="在此填写答案">`;
+            inner += `<input type="text" class="fill-input" name="q${q.id}" placeholder="在此填写答案" autocapitalize="off" autocorrect="off" spellcheck="false">`;
         }
 
         inner += `<div class="feedback" id="feedback-${q.id}"></div>`;
