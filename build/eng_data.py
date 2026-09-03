@@ -474,10 +474,174 @@ c1s4 = {
     ]
 }
 
+
+# ---------- 单词总复习（两节） ----------
+
+c1s5 = {
+    "id": "e-c1-s5",
+    "title": "第五节 单词总复习（一）：物品衣着 · 国籍 · 职业 · 家庭人物",
+    "notes": [
+        {
+            "point": "日常物品与衣着（Lesson 1-4、11-14）",
+            "explain": "handbag 手提包　pencil 铅笔　book 书　watch 手表　coat 外套　dress 连衣裙　skirt 裙子　shirt 衬衫　blouse 女式衬衫　tie 领带　suit 西装　hat 帽子　car 汽车　house 房子　umbrella 伞　ticket 票　number 号码　cloakroom 衣帽间　school 学校　case 箱子　carpet 地毯　boat 船",
+            "examples": [
+                {"tag": "基础", "text": "先按“穿在身上的”和“拿在手里的”分两堆记：<b>衣着类</b> coat / dress / skirt / shirt / blouse / tie / suit / hat；<b>随身物品类</b> handbag / umbrella / ticket / watch / pencil / book。分堆记比一条一条背快得多。"},
+                {"tag": "进阶", "text": "几个容易搞反的中文对应：<b>dress</b> 是连衣裙（一件式），<b>skirt</b> 是半身裙；<b>shirt</b> 是男式衬衫，<b>blouse</b> 是女式衬衫；<b>watch</b> 是手表（挂钟是 clock）。"},
+                {"tag": "易错", "text": "拼写陷阱三个：<b>umbrella</b> 中间是双 <b>ll</b>（不是 umbrela）；<b>handbag</b> 是一个词，中间不空格也不加连字符；<b>cloakroom</b> 同理是一个词。写的时候慢一秒，别凭读音猜。"}
+            ],
+            "think": "handbag 拆开是 hand（手）+ bag（包），cloakroom 拆开是 cloak（斗篷）+ room（房间）。你还能在这张表里找出几个由两个熟词拼起来的单词？找到规律后，这类词还需要死记吗？"
+        },
+        {
+            "point": "国家与国籍（Lesson 5-6、15）",
+            "explain": "China 中国 → Chinese　France 法国 → French　Germany 德国 → German　Japan 日本 → Japanese　Korea 韩国 → Korean　Italy 意大利 → Italian　Sweden 瑞典 → Swedish　America 美国 → American　Russia 俄罗斯 → Russian　England 英国 → English　Norway 挪威 → Norwegian　Denmark 丹麦 → Danish",
+            "examples": [
+                {"tag": "基础", "text": "多数国籍词是在国名上加后缀：Italy→Ital<b>ian</b>、America→Americ<b>an</b>、Russia→Russi<b>an</b>、Norway→Norweg<b>ian</b>、Korea→Kore<b>an</b>、Japan→Japan<b>ese</b>、China→Chin<b>ese</b>。"},
+                {"tag": "进阶", "text": "有四个是“整个换样子”的，必须单独记：France→<b>French</b>、Germany→<b>German</b>、Sweden→<b>Swedish</b>、Denmark→<b>Danish</b>、England→<b>English</b>。它们不是简单加后缀，看不出规律就直接背。"},
+                {"tag": "易错", "text": "最容易错的两个拼写：<b>Germany</b>（国名，结尾 -any）和 <b>German</b>（国籍，结尾 -an，少一个 y）—— 差一个字母，词性就变了。还有 <b>Norwegian</b> 中间是 <b>weg</b> 不是 <b>way</b>（虽然国名是 Norway）。"}
+            ],
+            "think": "为什么 Japan、China 都加 -ese，Italy、Russia、Korea 都加 -an，France、Germany 却完全变样？（提示：想想哪些国名是英语很早就接触到的，哪些是后来才传进来的）"
+        },
+        {
+            "point": "职业（Lesson 7-8、17-18）",
+            "explain": "engineer 工程师　nurse 护士　mechanic 机械师　keyboard operator 键盘操作员　policeman 男警察　policewoman 女警察　taxi driver 出租车司机　air hostess 空姐　postman 邮递员　hairdresser 理发师　housewife 家庭主妇　milkman 送奶工　teacher 教师　student 学生　manager 经理　assistant 助理　employee 雇员　customs officer 海关官员",
+            "examples": [
+                {"tag": "基础", "text": "问答固定搭配：What is your <b>job</b>? — I am <b>a</b> nurse.（别忘了那个 a）复数则不加：We are nurses."},
+                {"tag": "进阶", "text": "很多职业词是“动词/名词 + er / or / ist”构成的：teach→teach<b>er</b>、drive→driv<b>er</b>、hairdress→hairdress<b>er</b>、operate→operat<b>or</b>、manage→manag<b>er</b>。认出词根，一半的职业词就不用死记。"},
+                {"tag": "易错", "text": "三个拼写坑：<b>engineer</b> 结尾是 <b>-eer</b>（三个 e，不是 -eer 写成 -ear）；<b>mechanic</b> 开头是 <b>mech</b>（不是 mach）；<b>hairdresser</b> 中间是双 <b>ss</b>。这三个是新概念第一册里最常拼错的职业词。"}
+            ],
+            "think": "policeman 的复数是 policemen，housewife 的复数是 housewives —— 这两个词变复数的方式完全不同。你能只看单词的<b>结尾</b>，就判断出一个职业词该怎么变复数吗？"
+        },
+        {
+            "point": "家庭与人物（Lesson 4、11-12、15）",
+            "explain": "father 父亲　mother 母亲　brother 兄弟　sister 姐妹　son 儿子　daughter 女儿　man 男人（复数 men）　woman 女人（复数 women）　child 孩子（复数 children）　boy 男孩　girl 女孩　friend 朋友　tourist 游客",
+            "examples": [
+                {"tag": "基础", "text": "成对记最省力：father / mother、brother / sister、son / daughter、boy / girl、man / woman。一对里记住一个，另一个就带出来了。"},
+                {"tag": "进阶", "text": "这一组集中了英语最重要的三个<b>不规则复数</b>：man→<b>men</b>、woman→<b>women</b>、child→<b>children</b>。注意 women 的拼写变了但读音变化更大（/ˈwʊmən/ → /ˈwɪmɪn/），是靠读音记不出来的。"},
+                {"tag": "易错", "text": "<b>daughter</b> 里的 <b>gh</b> 完全不发音，最容易漏写；<b>friend</b> 是 <b>i 在 e 前面</b>（fri-end，不是 freind）。这两个都是“听不出来、只能靠眼睛记”的拼写。"}
+            ],
+            "think": "man→men 只改了一个字母，child→children 却多出了三个字母。这些不规则复数看起来毫无道理 —— 但它们恰恰都是英语里<b>最常用</b>的词。你觉得“最常用”和“最不规则”之间，会不会有什么联系？"
+        }
+    ],
+    "quiz": [
+        {"id": 1, "type": "fill", "point": "拼写：伞", "stem": "根据中文写出英文单词：伞 → ______", "answer": ["umbrella"],
+         "explain": "umbrella，注意中间是双 l。这是新概念第一册最常拼错的名词之一。"},
+        {"id": 2, "type": "fill", "point": "拼写：手提包", "stem": "根据中文写出英文单词：手提包 → ______", "answer": ["handbag"],
+         "explain": "handbag ＝ hand（手）+ bag（包），是一个词，中间不空格、不加连字符。"},
+        {"id": 3, "type": "multi", "point": "衣物词义辨析（想一想·辨析）", "stem": "关于衣物类单词，下列说法<b>正确</b>的有（　）【多选】",
+         "options": ["A. dress 指连衣裙", "B. skirt 指半身裙", "C. blouse 指女式衬衫", "D. watch 指挂在墙上的钟", "E. suit 指西装、套装"],
+         "answer": ["A", "B", "C", "E"],
+         "explain": "D 错：watch 是<b>手表</b>，挂钟是 clock。其余都对。dress 和 skirt 的区别（一件式 vs 半身）是这组词最常混的地方。"},
+        {"id": 4, "type": "fill", "point": "拼写：国籍形容词（德国）", "stem": "Germany 对应的国籍形容词是 ______", "answer": ["German"],
+         "explain": "German —— 比国名 Germany 少了结尾的 y。差一个字母词性就变了，是这一节的头号拼写坑。⚠️ 本站判分不区分大小写，但<b>正式书写时国籍形容词首字母必须大写</b>：German ✓ / german ✗。"},
+        {"id": 5, "type": "fill", "point": "拼写：国籍形容词（瑞典）", "stem": "Sweden 对应的国籍形容词是 ______", "answer": ["Swedish"],
+         "explain": "Swedish。它和 Danish（Denmark→丹麦的）一样，属于“整个换样子”的一类，看不出规律只能单独记。⚠️ 本站判分不区分大小写，但<b>正式书写时首字母必须大写</b>：Swedish ✓ / swedish ✗。"},
+        {"id": 6, "type": "multi", "point": "国名与国籍配对（想一想·刁钻）", "stem": "下列“国名 → 国籍形容词”的配对<b>正确</b>的有（　）【多选】",
+         "options": ["A. France → French", "B. Germany → Germany", "C. Norway → Norwegian", "D. Denmark → Danish", "E. Japan → Japanese"],
+         "answer": ["A", "C", "D", "E"],
+         "explain": "B 错：Germany 是国名本身，国籍形容词是 German（去掉 y）。C 要特别注意拼写 —— 国名是 Nor<b>way</b>，国籍却是 Nor<b>weg</b>ian，中间那段变了。"},
+        {"id": 7, "type": "fill", "point": "拼写：工程师", "stem": "根据中文写出英文单词：工程师 → ______", "answer": ["engineer"],
+         "explain": "engineer，结尾是 -eer（en-gi-neer）。写成 enginear 或 engineere 都是常见错误。"},
+        {"id": 8, "type": "fill", "point": "拼写：机械师", "stem": "根据中文写出英文单词：机械师 → ______", "answer": ["mechanic"],
+         "explain": "mechanic，开头是 mech- 不是 mach-。它和 machine（机器）同源，但拼写不同，别互相带偏。"},
+        {"id": 9, "type": "choice", "point": "职业问答的固定搭配", "stem": "—What is your job?　—____",
+         "options": ["A. I am nurse.", "B. I am a nurse.", "C. I nurse.", "D. My job nurse."],
+         "answer": "B",
+         "explain": "单数职业名词前必须加冠词 a/an，所以是 I am a nurse. A 漏了 a，是最典型的中式英语。"},
+        {"id": 10, "type": "multi", "point": "职业词的构成与复数（想一想·辨析）", "stem": "关于职业类单词，下列说法<b>正确</b>的有（　）【多选】",
+         "options": ["A. teacher 由 teach + er 构成", "B. operator 由 operate + or 构成", "C. policeman 的复数是 policemans", "D. housewife 的复数是 housewives", "E. hairdresser 中间是双写的 ss"],
+         "answer": ["A", "B", "D", "E"],
+         "explain": "C 错：policeman 以 man 结尾，变复数要把 man 改成 men，写作 policemen，不能直接加 s。看结尾就能判断怎么变复数，这是这组词最省力的记法。"},
+        {"id": 11, "type": "fill", "point": "拼写：女儿", "stem": "根据中文写出英文单词：女儿 → ______", "answer": ["daughter"],
+         "explain": "daughter，中间的 gh 完全不发音，读音里听不到，只能靠眼睛记。漏写 gh 是最常见的错误。"},
+        {"id": 12, "type": "fill", "point": "不规则复数：孩子", "stem": "child 的复数形式是 ______", "answer": ["children"],
+         "explain": "children，不是 childs 也不是 childrens（children 本身已经是复数，不能再加 s）。"},
+        {"id": 13, "type": "multi", "point": "不规则复数与拼写（想一想·刁钻）", "stem": "关于家庭与人物类单词，下列说法<b>正确</b>的有（　）【多选】",
+         "options": ["A. man 的复数是 men", "B. woman 的复数是 womans", "C. child 的复数是 children", "D. friend 的正确拼写是 i 在 e 前面", "E. daughter 里的 gh 不发音"],
+         "answer": ["A", "C", "D", "E"],
+         "explain": "B 错：woman 的复数是 <b>women</b>，而且读音从 /ˈwʊmən/ 变成 /ˈwɪmɪn/，变化比拼写还大，光靠读是记不住的。"},
+        {"id": 14, "type": "choice", "point": "复数形式综合（刁钻）", "stem": "下列复数形式<b>全部正确</b>的一组是（　）",
+         "options": ["A. mans, womans, childs", "B. men, women, children", "C. men, womens, childrens", "D. mans, women, children"],
+         "answer": "B",
+         "explain": "man→men、woman→women、child→children，三个都是不规则变化，而且都不能再额外加 s。这三个词是英语里出现频率最高的不规则复数，必须一次记牢。"}
+    ]
+}
+
+c1s6 = {
+    "id": "e-c1-s6",
+    "title": "第六节 单词总复习（二）：形容词 · 颜色 · 餐具容器",
+    "notes": [
+        {
+            "point": "描述人和物的形容词（Lesson 9-12、17-19、21）",
+            "explain": "fat 胖的 ↔ thin 瘦的　tall 高的 ↔ short 矮的／短的　old 老的／旧的 ↔ young 年轻的／new 新的　clean 干净的 ↔ dirty 脏的　hot 热的 ↔ cold 冷的　busy 忙的 ↔ lazy 懒的　empty 空的 ↔ full 满的　big 大的 ↔ small 小的　hard-working 勤奋的　tired 累的　thirsty 渴的　hungry 饿的　smart 时髦的／漂亮的　lovely 可爱的",
+            "examples": [
+                {"tag": "基础", "text": "形容词最好<b>成对记</b>：fat/thin、tall/short、clean/dirty、hot/cold、busy/lazy、empty/full。一次记一对，等于一次记两个词。"},
+                {"tag": "进阶", "text": "old 有两个反义词，看它修饰什么：形容<b>人</b>时 old ↔ young（老的↔年轻的）；形容<b>东西</b>时 old ↔ new（旧的↔新的）。short 也是双意思：形容人是“矮”，形容东西是“短”。"},
+                {"tag": "易错", "text": "三个拼写坑：<b>hungry</b> / <b>thirsty</b> / <b>busy</b> 都以 y 结尾但没有 e；<b>tired</b> 结尾是 <b>-ed</b>（很多人写成 tird）；<b>hard-working</b> 中间必须有<b>连字符</b>，写成两个词就不对了。"}
+            ],
+            "think": "old 既可以是“老的”也可以是“旧的”，short 既可以是“矮的”也可以是“短的”。中文却要用两个不同的字。你觉得这对学英语的中国学生是省事还是容易出错？"
+        },
+        {
+            "point": "颜色（Lesson 13-14）",
+            "explain": "blue 蓝色　white 白色　black 黑色　red 红色　green 绿色　yellow 黄色　orange 橙色　brown 棕色　grey 灰色（美式 gray）　pink 粉色。深浅表达：dark blue 深蓝　light blue 浅蓝。",
+            "examples": [
+                {"tag": "基础", "text": "问答固定句型：What <b>colour</b> is your car? — It is red. ／ What colour <b>are</b> your shoes? — They are black."},
+                {"tag": "进阶", "text": "颜色前加 <b>dark</b>（深）或 <b>light</b>（浅）就能表达深浅：dark green 深绿、light grey 浅灰。这比再背一堆新词省事得多。"},
+                {"tag": "易错", "text": "<b>colour</b> 是英式拼写（新概念用英式），美式写作 <b>color</b>，考试跟课本走用 colour。另外 <b>grey</b>（英式）和 <b>gray</b>（美式）也是同一个颜色的两种拼法，别当成两个词。"}
+            ],
+            "think": "orange 既是“橙色”也是“橙子”，pink 既是“粉色”也是一种花（石竹）。英语里还有哪些颜色词本来是某样东西的名字？（提示：想想 gold、silver）"
+        },
+        {
+            "point": "餐具与容器（Lesson 21-24）",
+            "explain": "cup 杯子（有把的）　glass 玻璃杯　bottle 瓶子　dish 盘、碟　plate 盘子　box 盒子　knife 刀（复数 knives）　fork 叉子　spoon 勺子　teapot 茶壶　tin 罐头　jug 罐、壶　bowl 碗　table 桌子　cupboard 碗柜　sugar 糖　milk 牛奶　tea 茶　coffee 咖啡　water 水",
+            "examples": [
+                {"tag": "基础", "text": "刀叉勺一起记：<b>knife</b>（刀）／ <b>fork</b>（叉）／ <b>spoon</b>（勺），这三个总是同时出现在餐桌上，也总是同时出现在考题里。"},
+                {"tag": "进阶", "text": "这一组的复数变化正好覆盖三条规则：box→box<b>es</b>（x 结尾加 es）、dish→dish<b>es</b>（sh 结尾加 es）、knife→kni<b>ves</b>（fe 变 ves）、glass→glass<b>es</b>（ss 结尾加 es）。背单词的同时把复数规则一起过一遍。"},
+                {"tag": "易错", "text": "两个大坑：<b>knife</b> 开头的 <b>k 不发音</b>，听写时最容易漏掉；<b>cupboard</b> 里的 <b>p 也不发音</b>（读作 /ˈkʌbəd/），但拼写时那个 p 必须写出来。这两个都是“听不出、只能背”的词。"}
+            ],
+            "think": "knife 的 k 不发音，cupboard 的 p 不发音，daughter 的 gh 不发音 —— 英语里为什么会有这么多“写出来却不读”的字母？（提示：这些字母在几百年前是发音的，是读音变了、拼写没跟着变）"
+        }
+    ],
+    "quiz": [
+        {"id": 1, "type": "fill", "point": "拼写：饿的", "stem": "根据中文写出英文单词：饿的 → ______", "answer": ["hungry"],
+         "explain": "hungry，结尾是 -gry，没有 e。和 thirsty（渴的）、busy（忙的）一样都以 y 结尾。"},
+        {"id": 2, "type": "fill", "point": "拼写：渴的", "stem": "根据中文写出英文单词：渴的 → ______", "answer": ["thirsty"],
+         "explain": "thirsty。开头是 thir-（和 third 第三 同一段拼写），不是 thur-。"},
+        {"id": 3, "type": "fill", "point": "拼写：累的", "stem": "根据中文写出英文单词：累的 → ______", "answer": ["tired"],
+         "explain": "tired，结尾是 -ed。写成 tird 或 tierd 都是常见错误。"},
+        {"id": 4, "type": "multi", "point": "形容词的一词多义（想一想·刁钻）", "stem": "关于这些形容词，下列说法<b>正确</b>的有（　）【多选】",
+         "options": ["A. 形容人时 old 的反义词是 young", "B. 形容东西时 old 的反义词是 new", "C. short 既可以指“矮”也可以指“短”", "D. hard-working 中间不需要连字符", "E. empty 的反义词是 full"],
+         "answer": ["A", "B", "C", "E"],
+         "explain": "D 错：hard-working（勤奋的）中间必须有连字符，它是一个合成形容词。A 和 B 放在一起，是为了让你注意 old 有<b>两个</b>反义词，取决于它形容的是人还是物。"},
+        {"id": 5, "type": "fill", "point": "拼写：颜色（英式）", "stem": "“颜色”的英式拼写是 ______（新概念课本用的这一种）", "answer": ["colour"],
+         "explain": "colour 是英式拼写，美式是 color。新概念英语是英式教材，跟课本走写 colour。"},
+        {"id": 6, "type": "choice", "point": "深浅颜色的表达", "stem": "“浅蓝色”的正确说法是（　）",
+         "options": ["A. small blue", "B. light blue", "C. thin blue", "D. white blue"],
+         "answer": "B",
+         "explain": "深浅用 dark（深）和 light（浅）：dark blue 深蓝、light blue 浅蓝。small / thin 是形容大小和厚薄的，不能用来说颜色。"},
+        {"id": 7, "type": "multi", "point": "颜色词的用法（想一想·辨析）", "stem": "关于颜色类单词，下列说法<b>正确</b>的有（　）【多选】",
+         "options": ["A. colour 是英式拼写，color 是美式拼写", "B. grey 和 gray 是同一个颜色的两种拼法", "C. orange 既表示橙色也表示橙子", "D. dark green 表示深绿色", "E. 问复数东西的颜色要说 What colour is your shoes?"],
+         "answer": ["A", "B", "C", "D"],
+         "explain": "E 错：shoes 是复数，be 动词要用 are —— What colour <b>are</b> your shoes? 这题把拼写知识和上一节的语法考点串在了一起。"},
+        {"id": 8, "type": "fill", "point": "拼写：刀（不发音的字母）", "stem": "根据中文写出英文单词：刀 → ______", "answer": ["knife"],
+         "explain": "knife，开头的 k <b>不发音</b>但必须写出来。听写时最容易漏掉这个 k。"},
+        {"id": 9, "type": "fill", "point": "不规则复数：刀", "stem": "knife 的复数形式是 ______", "answer": ["knives"],
+         "explain": "knives，以 fe 结尾要变成 ves。同类词还有 wife→wives、life→lives、leaf→leaves。"},
+        {"id": 10, "type": "fill", "point": "拼写：碗柜（不发音的字母）", "stem": "根据中文写出英文单词：碗柜 → ______", "answer": ["cupboard"],
+         "explain": "cupboard，中间的 p <b>不发音</b>（读作 /ˈkʌbəd/），但拼写时必须写出来。它由 cup + board 组成，从构词上看就不会漏掉 p 了。"},
+        {"id": 11, "type": "judge", "point": "不发音字母的拼写", "stem": "knife 的 k 不发音，所以书写时可以省略，写成 nife。",
+         "answer": "错",
+         "explain": "错。<b>不发音不等于不用写</b>。knife、cupboard、daughter 里的不发音字母都必须完整写出来 —— 这正是这类词只能靠眼睛记、不能靠耳朵记的原因。"},
+        {"id": 12, "type": "multi", "point": "餐具容器的复数（想一想·刁钻）", "stem": "下列复数形式<b>正确</b>的有（　）【多选】",
+         "options": ["A. box → boxes", "B. dish → dishes", "C. knife → knifes", "D. glass → glasses", "E. spoon → spoons"],
+         "answer": ["A", "B", "D", "E"],
+         "explain": "C 错：knife 以 fe 结尾，要变成 kni<b>ves</b>。这一题把四条复数规则（x 结尾、sh 结尾、fe 结尾、直接加 s）放在一起考，只要有一条没记牢就会错。"}
+    ]
+}
+
 CHAPTERS.append({
     "id": "e-c1",
     "title": "第一章 Lesson 1-24：入门核心（be 动词 · 冠词 · 代词）",
-    "sections": [c1s1, c1s2, c1s3, c1s4]
+    "sections": [c1s1, c1s2, c1s3, c1s4, c1s5, c1s6]
 })
 
 DATA = {"chapters": CHAPTERS}
