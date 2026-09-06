@@ -130,7 +130,7 @@ def main():
     n_n = sum(len(s["notes"]) for c in DATA["chapters"] for s in c["sections"])
     n_q = sum(len(s["quiz"]) for c in DATA["chapters"] for s in c["sections"])
     print("✅ 体检全部通过")
-    print("   已生成 %s（%d 字节）" % (path, len(out)))
+    print("   已生成 %s（%d 字符 / %d 字节）" % (path, len(out), len(out.encode("utf-8"))))
     print("   %d 章 / %d 节 / %d 个知识点 / %d 道题" % (n_c, n_s, n_n, n_q))
 
 

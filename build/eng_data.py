@@ -644,4 +644,9 @@ CHAPTERS.append({
     "sections": [c1s1, c1s2, c1s3, c1s4, c1s5, c1s6]
 })
 
+# ==================== 第二至七章（各自獨立模組） ====================
+import eng_c2, eng_c3, eng_c4, eng_c5, eng_c6, eng_c7
+for _m in (eng_c2, eng_c3, eng_c4, eng_c5, eng_c6, eng_c7):
+    CHAPTERS.append(_m.CHAPTER)
+
 DATA = {"chapters": CHAPTERS}
