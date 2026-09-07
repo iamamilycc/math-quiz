@@ -392,7 +392,7 @@ function checkGrammar(sent) {
         const v = t[k];
         if (v === 'not' || v === "n't" || SUBJ_I.has(v) || SUBJ_3S.has(v) || SUBJ_PL.has(v) ||
             /^(the|a|an|my|your|his|her|our|their|this|that)$/.test(v)) continue;
-        if (THIRD_TO_BASE[v] || PAST_TO_BASE[v]) {
+        if (!SAME_BASE_PAST.has(v) && (THIRD_TO_BASE[v] || PAST_TO_BASE[v])) {
           add('error', '<b>' + w + '</b> 后面的动词 <b>' + v + '</b> 要用原形',
               w + ' 已经带走了时态和人称，一个句子只能有一个时态标记，动词还原成 <b>' +
               (THIRD_TO_BASE[v] || PAST_TO_BASE[v]) + '</b>');
@@ -401,7 +401,10 @@ function checkGrammar(sent) {
       }
     }
     /* R6b 情态动词后必须原形 */
-    if (MODALS.has(w) && nx && (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
+    /* ⚠️ 原形与过去式同形的词（cost / put / cut）跟在情态动词后面本来就对：
+       The repairs will cost a lot. 不能报错。 */
+    if (MODALS.has(w) && nx && !SAME_BASE_PAST.has(nx) &&
+        (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
       add('error', '<b>' + w + '</b> 后面的动词要用原形',
           '情态动词（can/must/will…）后面一律跟原形：<b>' + (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) + '</b>');
 
