@@ -75,6 +75,8 @@ const OK = [
   'Is this your coat or her coat?',            // her 本身就是物主代词
   'The cat caught a mouse last night.',        // caught 是 catch 的变形
   'He is the tallest boy in our class.',       // tallest 是 tall 的变形
+  'The shop is open every day until six.',    // open 也是形容词，不是「be+动词原形」
+  'The door is shut now.',
 ];
 
 let fails = 0;

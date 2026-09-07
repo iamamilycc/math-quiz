@@ -220,6 +220,12 @@ const SUBJ_3S = new Set(['he','she','it','this','that','someone','somebody','eve
 const SUBJ_3S_FOR_VERB = new Set(['he','she','it','someone','somebody','everyone','everybody','nobody']);
 const SUBJ_PL = new Set(['we','they','you','these','those','people']);
 /* 元音音素开头（用 an）与例外 */
+/* 既是动词也是形容词的词：is open / very clean / the door is shut 都是对的，
+   这些词在「be + 动词原形」和「very + 动词」两条规则里一律不报。
+   （两条误报都是全册例句自检撞出来的。） */
+const ALSO_ADJ = new Set(['clean','open','close','shut','free','warm','cool','slow','right','light',
+                          'empty','dry','quiet','still','well','fine','short','long','fast','hard',
+                          'busy','tired','fat','thin','tall','sharp','blunt','full','large','little']);
 const AN_EXCEPT_A = new Set(['university','uniform','user','european','one','once','useful','usual']); // 读音以辅音开头 → 用 a
 const A_EXCEPT_AN = new Set(['hour','honest','honour','honor','heir']);                                 // h 不发音 → 用 an
 
@@ -334,8 +340,10 @@ function checkGrammar(sent) {
       add('error', '<b>' + w + '</b> 后面的动词要用原形',
           '情态动词（can/must/will…）后面一律跟原形：<b>' + (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) + '</b>');
 
-    /* R7 be + 动词原形（缺 ing 或多余的 be） */
-    if (BE_ALL.has(w) && nx && BASE_VERBS.has(nx) && !['be','been','being'].includes(nx) && !AUX_DO.has(nx))
+    /* R7 be + 动词原形（缺 ing 或多余的 be）
+       ⚠️ 排除既是形容词的词：The shop is open… / The door is shut… 都是对的 */
+    if (BE_ALL.has(w) && nx && BASE_VERBS.has(nx) && !ALSO_ADJ.has(nx) &&
+        !['be','been','being'].includes(nx) && !AUX_DO.has(nx))
       add('error', '<b>' + w + ' ' + nx + '</b> 连在一起不对',
           '要么去掉 <b>' + w + '</b>，要么把动词改成 ing：' + w + ' <b>' + nx.replace(/e$/, '') + 'ing</b>');
 
@@ -350,11 +358,7 @@ function checkGrammar(sent) {
         nx && ['never','nothing','nobody','none'].includes(nx))
       add('error', '英语不能用双重否定', '把 <b>' + w + '</b> 去掉，只留 <b>' + nx + '</b>（它本身就是否定）');
 
-    /* R10 very 不能直接修饰动词
-       ⚠️ clean / open / free / warm 这些既是动词也是形容词，「very clean」完全正确，
-          所以这些词一律不报——把对的判成错比漏掉一个错更伤。 */
-    const ALSO_ADJ = new Set(['clean','open','close','free','warm','cool','slow','right','light',
-                              'empty','dry','quiet','still','well','fine','short','long','fast','hard']);
+    /* R10 very 不能直接修饰动词（ALSO_ADJ 里的词既是动词也是形容词，不报） */
     if (w === 'very' && nx && !ALSO_ADJ.has(nx) &&
         (BASE_VERBS.has(nx) || THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
       add('error', 'very 不能直接放在动词前面',
