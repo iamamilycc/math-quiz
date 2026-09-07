@@ -40,6 +40,19 @@ const ERR = [
   ['I a student in this school.',        '缺 be'],
   ['He my best friend here.',            '缺 be'],
   ['Her mother a nurse here.',           '缺 be'],
+  // 名词主语的三单（不只是 he/she/it）
+  ['My father work in a bank.',          '名词主语漏 s'],
+  ['The teacher come here every day.',   '名词主语漏 s'],
+  // 不规则动词写成「原形+ed」
+  ['He goed to school yesterday.',       'goed'],
+  ['She buyed a new dress.',             'buyed'],
+  ['They teached us English last year.', 'teached'],
+  // There is + 复数
+  ['There is many books on the desk.',   'There is + 复数'],
+  ['There is two apples on the plate.',  'There is + 复数'],
+  // like / want 后面直接跟动词原形
+  ['I like play football after school.', 'like + 原形'],
+  ['She wants buy a new hat.',           'want + 原形'],
 ];
 const OK = [
   'Excuse me, where is your book?', 'Is this your handbag?', 'This is my handbag on the table.',
@@ -77,6 +90,12 @@ const OK = [
   'He is the tallest boy in our class.',       // tallest 是 tall 的变形
   'The shop is open every day until six.',    // open 也是形容词，不是「be+动词原形」
   'The door is shut now.',
+  // ↓ R16（名词主语三单）最容易误报，这些必须全部放行
+  'My father works in a bank.', 'He went to school yesterday.',
+  'There are many books on the desk.', 'I like playing football after school.',
+  'I like to play football after school.', 'Is this your watch on the table?',
+  'She got a new watch for her birthday.', 'The hairdresser cut my hair very short.',
+  'I felt very tired after the long walk.', 'We start work at nine every morning.',
 ];
 
 let fails = 0;

@@ -258,8 +258,42 @@ const ALL_NOUNS = (() => {
 })();
 /* ⚠️ her / his / its 本身就能当物主代词（her coat 是对的），绝不能列进来，
    否则会把正确的句子判成错——这是全册例句自检抓出来的。 */
+/* 不规则复数：the children come… 是对的，不能当成「名词主语漏了 s」 */
+/* 限定词：判「名词主语」和「缺 be」都要用，必须放在模块层级
+   （放在函数里会因为暂时性死区，让循环里先用到的规则报 ReferenceError） */
+const DET = new Set(['a','an','the','my','your','his','her','its','our','their','this','that','one','two','three']);
+const IRREG_PLURAL = new Set(['children','men','women','people','feet','teeth','mice','geese','police']);
+/* 单数但结尾是 s 的名词：不能当成复数 */
+const SINGULAR_S = new Set(['glass','dress','bus','class','address','business','news','chess','grass','glasses']);
+/* 不规则动词的原形——写成「原形+ed」就是错的（goed / buyed / teached） */
+const IRREG_BASES = new Set(['go','come','see','do','have','make','take','give','get','buy','bring','think',
+  'teach','catch','eat','drink','write','read','run','sit','stand','meet','leave','lose','find','feel','keep',
+  'sleep','speak','wear','sing','swim','say','tell','pay','send','spend','hear','hold','fly','drive','fall',
+  'ring','win','cut','put','let','lend','understand','begin','break','choose','forget','grow','build','sell']);
+/* 后面要跟 to do 或 doing 的动词——「I like play football」是高频中式错误 */
+const NEED_TO_OR_ING = new Set(['like','likes','liked','love','loves','loved','want','wants','wanted',
+  'hate','hates','hated','hope','hopes','hoped','enjoy','enjoys','enjoyed','decide','decides','decided',
+  'finish','finishes','finished','begin','begins','began','learn','learns','learnt','try','tries','tried']);
+const PREPS = new Set(['at','in','on','for','with','to','from','of','by','about','after','before','until','near','under','over']);
+/* 明确表示复数的词：There is many books 里的 many */
+const PLURAL_MARK = new Set(['many','several','both','few','two','three','four','five','six','seven','eight','nine','ten','twenty']);
+
 const PRON_NEEDS_POSS = { i:'my', you:'your', he:'his', she:'her', it:'its', we:'our', they:'their',
                           me:'my', him:'his', us:'our', them:'their' };
+
+/* 用 function 宣告而不是 const 箭头函数——const 有暂时性死区，
+   循环里先用到的规则会报 ReferenceError（这个坑踩过两次了）。 */
+function isVerbTok(x) {
+  return BE_ALL.has(x) || MODALS.has(x) || AUX_DO.has(x) ||
+         BASE_VERBS.has(x) || !!THIRD_TO_BASE[x] || !!PAST_TO_BASE[x];
+}
+/* 判「整句有没有动词」时放得更宽：连 cannot / can't 这类合写否定和 ed/ing 结尾都算。
+   不能把 s 结尾也算——this / his / bus 都会被误当成动词。 */
+function isVerbTok0(x) {
+  return isVerbTok(x) ||
+    /^(cannot|can't|won't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|shouldn't|couldn't|mustn't)$/.test(x) ||
+    (x.length > 3 && /(ed|ing)$/.test(x));
+}
 
 function tokenize(s) {
   return String(s || '').trim().split(/\s+/).map(t => t.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, ''))
@@ -377,6 +411,42 @@ function checkGrammar(sent) {
       add('warn', '介词 <b>' + w + '</b> 后面通常跟名词或动词 ing',
           '如果这里是动作，改成 <b>' + nx.replace(/e$/, '') + 'ing</b>');
 
+    /* R16 名词主语的三单：My father work… → works
+       ⚠️ 这条最容易误报——分不清名词和动词就会把 your watch / the long walk 判成错。
+       四道保险：① 主语必须是词表里「确定是名词、不兼动词」的词（PURE_NOUNS）
+                ② 不能是复数（结尾 s / children 这类）
+                ③ 动词不能是原形与过去式同形的（the hairdresser cut… 判不出时态）
+                ④ 动词后面那个词不能是动词（The school work is hard 里 work 是名词） */
+    const nx3 = t[i + 3];
+    if (!governed && !pastCtx && DET.has(w) && nx && nx2 &&
+        PURE_NOUNS.has(nx) && !/s$/.test(nx) && !IRREG_PLURAL.has(nx) && !SINGULAR_S.has(nx) &&
+        BASE_VERBS.has(nx2) && !SAME_BASE_PAST.has(nx2) && !ALSO_ADJ.has(nx2) &&
+        !BE_ALL.has(nx2) && !MODALS.has(nx2) && !AUX_DO.has(nx2) &&
+        nx3 && !isVerbTok(nx3) && !pf[i] && !pf[i + 1])
+      add('error', '<b>' + nx + '</b> 是单数，后面的动词 <b>' + nx2 + '</b> 少了 s',
+          '主语是一个人／一样东西时，一般现在时的动词要加 s：<b>' +
+          ((VERB_FORMS[nx2] && VERB_FORMS[nx2][0]) || nx2 + 's') + '</b>');
+
+    /* R17 不规则动词写成「原形+ed」：goed / buyed / teached */
+    if (w.length > 3 && /ed$/.test(w)) {
+      const b1 = w.slice(0, -2), b2 = w.slice(0, -1);
+      const base = IRREG_BASES.has(b1) ? b1 : (IRREG_BASES.has(b2) ? b2 : null);
+      if (base && VERB_FORMS[base])
+        add('error', '<b>' + w + '</b> 不是英语单词',
+            '<b>' + base + '</b> 是不规则动词，过去式不能加 ed，要写成 <b>' + VERB_FORMS[base][1] + '</b>');
+    }
+
+    /* R18 There is + 复数：There is many books… → There are */
+    if (w === 'there' && (nx === 'is' || nx === 'was') && nx2 && PLURAL_MARK.has(nx2))
+      add('error', 'There ' + nx + ' 后面跟的是复数（' + nx2 + '…）',
+          '后面是复数就要用 <b>There ' + (nx === 'is' ? 'are' : 'were') + '</b>');
+
+    /* R19 like / want 后面直接跟动词原形：I like play football → like playing / like to play */
+    if (NEED_TO_OR_ING.has(w) && nx && BASE_VERBS.has(nx) && !BE_ALL.has(nx) &&
+        !ALSO_ADJ.has(nx) && !AUX_DO.has(nx) && !MODALS.has(nx) && nx2 && !PREPS.has(nx2) && !pf[i])
+      add('error', '<b>' + w + '</b> 后面不能直接跟动词原形 <b>' + nx + '</b>',
+          '要么加 to：' + w + ' <b>to ' + nx + '</b>，要么用 ing：' + w + ' <b>' + nx.replace(/e$/, '') + 'ing</b>');
+
     /* R15b be 动词 + 代词 + 名词：这个句型里名词不可能是动词，可以放心判
        （Where is you book? → your book） */
     if (BE_ALL.has(w) && nx && PRON_NEEDS_POSS[nx] && nx2 && ALL_NOUNS.has(nx2) && !pf[i + 1])
@@ -397,13 +467,6 @@ function checkGrammar(sent) {
      （I a student. / My father a doctor.）。
      ⚠️ 不能用「整句找不到动词就报」这种写法：动词表不可能穷尽，
         I share a room with my sister. 会被误判成没有动词。 */
-  const DET = new Set(['a','an','the','my','your','his','her','its','our','their','this','that','one','two','three']);
-  const isVerbTok = x => BE_ALL.has(x) || MODALS.has(x) || AUX_DO.has(x) ||
-    BASE_VERBS.has(x) || THIRD_TO_BASE[x] || PAST_TO_BASE[x];
-  /* 判「整句有没有动词」时放得更宽：连 cannot / can't 这类合写否定和 ed/ing/s 结尾都算 */
-  const isVerbTok0 = x => isVerbTok(x) ||
-    /^(cannot|can't|won't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|shouldn't|couldn't|mustn't)$/.test(x) ||
-    (x.length > 3 && /(ed|ing)$/.test(x));   /* 不能把 s 结尾也算——this / his / bus 都会被误当成动词 */
   /* ⚠️ 只有「整句一个动词都找不到」时才可能是漏了 be。
      两个反例都是实测撞出来的：
        Is this your handbag?              be 在句首（疑问句）
