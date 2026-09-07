@@ -145,7 +145,13 @@ const MK_PER_WORD = 3, MK_MIN_WORDS = 5;
 function hasWord(s, w) {
   const base = normSent(w); if (!base) return true;
   const S = ' ' + normSent(s) + ' ';
-  if (base.indexOf(' ') >= 0) return S.indexOf(' ' + base + ' ') >= 0;
+  if (base.indexOf(' ') >= 0) {          /* 词组：第一个词可以变形（turn on → turned on） */
+    const sp = base.indexOf(' '), head = base.slice(0, sp), tail = base.slice(sp + 1);
+    const hs = head.replace(/[ey]$/, '');
+    let heads = [head, head+'s', head+'es', head+'ed', head+'ing', hs+'ing', hs+'ed', hs+'ies', hs+'ied'];
+    if (typeof VERB_FORMS !== 'undefined' && VERB_FORMS[head]) heads = heads.concat(VERB_FORMS[head]);
+    return heads.some(h => S.indexOf(' ' + h + ' ' + tail + ' ') >= 0);
+  }
   const se = base.replace(/e$/, ''), sy = base.replace(/y$/, ''), dbl = base + base.slice(-1);
   const forms = [base, base+'s', base+'es', base+'d', base+'ed', base+'ing', base+'er', base+'est',
                  se+'ing', se+'ed', se+'er', se+'est', sy+'ies', sy+'ied', sy+'ier', sy+'iest',
@@ -156,7 +162,11 @@ function hasWord(s, w) {
                 buy:['bought'], bring:['brought'], think:['thought'], teach:['taught'], take:['took','taken'],
                 give:['gave','given'], eat:['ate','eaten'], write:['wrote','written'], wear:['wore','worn'],
                 speak:['spoke','spoken'], sing:['sang','sung'], swim:['swam','swum'], fly:['flew','flown'],
-                drive:['drove','driven'], fall:['fell','fallen'], ring:['rang','rung'] };
+                drive:['drove','driven'], fall:['fell','fallen'], ring:['rang','rung'],
+                tooth:['teeth'], foot:['feet'], child:['children'], man:['men'], woman:['women'],
+                mouse:['mice'], person:['people'], knife:['knives'], leaf:['leaves'],
+                shelf:['shelves'], wife:['wives'], life:['lives'],
+                sweep:['swept'],sleep:['slept'],keep:['kept'],feel:['felt'],meet:['met'],leave:['left'],lose:['lost'],build:['built'],burn:['burnt', 'burned'],dream:['dreamt', 'dreamed'],smell:['smelt', 'smelled'],hang:['hung'],shine:['shone'],shoot:['shot'],sit:['sat'],stand:['stood'],wake:['woke'],wear:['wore', 'worn'],win:['won'],hide:['hid', 'hidden'],draw:['drew', 'drawn'],blow:['blew', 'blown'],know:['knew', 'known'],throw:['threw', 'thrown'],grow:['grew', 'grown'],fly:['flew', 'flown'],begin:['began', 'begun'],break:['broke', 'broken'],choose:['chose', 'chosen'],forget:['forgot', 'forgotten'],freeze:['froze', 'frozen'],steal:['stole', 'stolen'],swim:['swam', 'swum'],ride:['rode', 'ridden'],rise:['rose', 'risen'],drive:['drove', 'driven'],sell:['sold'],tell:['told'],feed:['fed'],lead:['led'],mean:['meant'],cost:['cost'],hurt:['hurt'],shut:['shut'],let:['let'],set:['set'], };
   if (IRR[base]) forms.push.apply(forms, IRR[base]);
   return forms.some(f => f && S.indexOf(' ' + f + ' ') >= 0);
 }
@@ -466,7 +476,10 @@ function checkGrammar(sent) {
           '表示「' + nx + ' 的 ' + nx2 + '」要用物主代词：<b>' + PRON_NEEDS_POSS[nx] + ' ' + nx2 + '</b>');
 
     /* R15 代词后面直接跟名词 → 该用物主代词（中文「你书」直译成 you book） */
-    if (PRON_NEEDS_POSS[w] && nx && PURE_NOUNS.has(nx) && !pf[i])
+    /* ⚠️ 双宾语句「taught you English / gave me a book」里 pronoun+noun 是对的，
+       所以前一个词若是实义动词（不含 be）就不报。be 后面才可能是 is me handbag 这种错。 */
+    const prevIsAction = i > 0 && isVerbTok(t[i - 1]) && !BE_ALL.has(t[i - 1]);
+    if (!prevIsAction && PRON_NEEDS_POSS[w] && nx && PURE_NOUNS.has(nx) && !pf[i])
       add('error', '<b>' + w + ' ' + nx + '</b> 不对，这里要用「谁的」',
           '表示「' + w + ' 的 ' + nx + '」要用物主代词：<b>' + PRON_NEEDS_POSS[w] + ' ' + nx + '</b>');
 

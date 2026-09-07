@@ -39,6 +39,56 @@ IRREGULAR = {
     'fly': ['flew', 'flown'], 'drive': ['drove', 'driven'], 'fall': ['fell', 'fallen'],
     'ring': ['rang', 'rung'], 'win': ['won'], 'cut': ['cut'], 'put': ['put'], 'let': ['let'],
     'learn': ['learnt', 'learned'], 'lend': ['lent'], 'understand': ['understood'],
+    # 不规则名词复数：写 teeth 来练 tooth 也算用上了
+    'tooth': ['teeth'], 'foot': ['feet'], 'child': ['children'], 'man': ['men'],
+    'woman': ['women'], 'mouse': ['mice'], 'person': ['people'], 'knife': ['knives'],
+    'leaf': ['leaves'], 'shelf': ['shelves'], 'wife': ['wives'], 'life': ['lives'],
+    'sweep': ['swept'],
+    'sleep': ['slept'],
+    'keep': ['kept'],
+    'feel': ['felt'],
+    'meet': ['met'],
+    'leave': ['left'],
+    'lose': ['lost'],
+    'build': ['built'],
+    'burn': ['burnt', 'burned'],
+    'dream': ['dreamt', 'dreamed'],
+    'smell': ['smelt', 'smelled'],
+    'hang': ['hung'],
+    'shine': ['shone'],
+    'shoot': ['shot'],
+    'sit': ['sat'],
+    'stand': ['stood'],
+    'wake': ['woke'],
+    'wear': ['wore', 'worn'],
+    'win': ['won'],
+    'hide': ['hid', 'hidden'],
+    'draw': ['drew', 'drawn'],
+    'blow': ['blew', 'blown'],
+    'know': ['knew', 'known'],
+    'throw': ['threw', 'thrown'],
+    'grow': ['grew', 'grown'],
+    'fly': ['flew', 'flown'],
+    'begin': ['began', 'begun'],
+    'break': ['broke', 'broken'],
+    'choose': ['chose', 'chosen'],
+    'forget': ['forgot', 'forgotten'],
+    'freeze': ['froze', 'frozen'],
+    'steal': ['stole', 'stolen'],
+    'swim': ['swam', 'swum'],
+    'ride': ['rode', 'ridden'],
+    'rise': ['rose', 'risen'],
+    'drive': ['drove', 'driven'],
+    'sell': ['sold'],
+    'tell': ['told'],
+    'feed': ['fed'],
+    'lead': ['led'],
+    'mean': ['meant'],
+    'cost': ['cost'],
+    'hurt': ['hurt'],
+    'shut': ['shut'],
+    'let': ['let'],
+    'set': ['set'],
 }
 
 
@@ -50,7 +100,12 @@ def _has_word(sent, w):
         return True
     S = ' ' + _norm(sent) + ' '
     if ' ' in base:
-        return (' ' + base + ' ') in S
+        # 词组：第一个词可以变形（turn on → turned on / turns on / turning on）
+        head, tail = base.split(' ', 1)
+        hs = re.sub(r'[ey]$', '', head)
+        heads = {head, head + 's', head + 'es', head + 'ed', head + 'ing',
+                 hs + 'ing', hs + 'ed', hs + 'ies', hs + 'ied'} | set(IRREGULAR.get(head, []))
+        return any((' ' + h + ' ' + tail + ' ') in S for h in heads)
     stem_e = re.sub(r'e$', '', base)          # like → lik(ing)
     stem_y = re.sub(r'y$', '', base)          # happy → happ(ier)
     forms = {base, base+'s', base+'es', base+'d', base+'ed', base+'ing',
