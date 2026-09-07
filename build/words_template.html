@@ -59,6 +59,7 @@ ul.chk li { padding:5px 0; font-size:14px; line-height:1.6; }
 </head>
 <body>
 <div class="page">
+  <a class="back-link" id="homeLink" href="index.html">‹ 返回科目选择</a>
   <button class="back-link" id="backBtn" onclick="goBack()" style="display:none">← 返回</button>
   <h1 id="hTitle">新概念英语第一册 · 单词</h1>
   <p class="subtitle" id="hSub">记忆 · 背诵 · 造句</p>
@@ -84,25 +85,49 @@ function wordCount(s) { return String(s || '').trim().split(/\s+/).filter(Boolea
 
 const PROG_KEY = 'mathquiz_words_prog_v1';
 function getProg() { try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); } catch (e) { return {}; } }
-function setProg(sid, mode, done, total) {
+function setProg(sid, mode, done, total, score) {
   const p = getProg(); p[sid] = p[sid] || {};
   p[sid][mode] = Math.max((p[sid][mode] || 0), done);
   p[sid][mode + '_n'] = total;
+  if (score != null) p[sid][mode + '_s'] = Math.max((p[sid][mode + '_s'] || 0), score);
   try { localStorage.setItem(PROG_KEY, JSON.stringify(p)); } catch (e) {}
 }
 function secDone(sid, mode) { const p = getProg()[sid] || {}; return p[mode] || 0; }
+function secScore(sid, mode) { const p = getProg()[sid] || {}; return p[mode + '_s'] || 0; }
+/* ⭐ 续做定位：做一半退出，回来要接着做。
+   不做这件事会出两个问题：① 孩子每次回来都从第 1 个重做
+   ② 进度存档是「只增不减」(Math.max)，重做前面几个不会让进度前进，看起来像卡死。 */
+function modeResume(sid, mode, n) {
+  const d = Math.min(secDone(sid, mode), n);
+  return d >= n ? 0 : d;                 /* 已经全做完 → 开新的一轮 */
+}
 
 /* 错题本：与其他科目共用，subject 用 engword */
-function addWrong(word, sec, unit) {
+/* 写进错题本。⭐ 必须记下孩子当时实际写了什么——只写「未过」的话，
+   复习时他看不到自己错在哪，等于白记一笔。 */
+const MODE_LABEL = { card: '记忆卡拼写', recall: '背诵', make: '造句' };
+function addWrong(word, sec, unit, mode, userAnswer) {
   const KEY = 'mathquiz_wrongbook_v1';
   let book = []; try { book = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
   const now = new Date().toISOString();
-  const key = 'engword|' + word.w + '|' + word.zh;
+  const key = 'engword|' + word.w + '|' + word.zh;      /* 一个词一条，三种练法都错就累计次数 */
+  /* 同一个词在三种练法里都可能错。合并成一条（一个词一条，复习时不用翻三遍），
+     但要把每种练法各自写错的内容都留下——只留最后一次的话，
+     孩子看不到自己在拼写上也栽过跟头。 */
+  const label = MODE_LABEL[mode] || '练习';
+  const said = String(userAnswer || '').trim() || '（空）';
+  const render = at => Object.keys(at).map(k => MODE_LABEL[k] + '写成「' + at[k] + '」').join('　｜　');
   const ex = book.find(b => b.key === key);
-  if (ex) { ex.wrongCount += 1; ex.lastWrongAt = now; }
+  if (ex) {
+    ex.wrongCount += 1; ex.lastWrongAt = now;
+    ex.attempts = ex.attempts || {}; ex.attempts[mode] = said;
+    ex.userAnswer = render(ex.attempts);
+  }
   else book.push({ key, subject: 'engword', chapterTitle: unit.title, sectionTitle: sec.title,
-    point: word.w, stem: word.pos + ' ' + word.zh, userAnswer: '（拼写/背诵未过）',
-    correctAnswer: word.w, explain: '例句：' + word.egs[0], wrongCount: 1, firstWrongAt: now, lastWrongAt: now });
+    point: word.w, stem: word.pos + ' ' + word.zh,
+    attempts: { [mode]: said }, userAnswer: label + '写成「' + said + '」',
+    correctAnswer: word.w + '　' + word.ipa, explain: '例句：' + word.egs[0],
+    wrongCount: 1, firstWrongAt: now, lastWrongAt: now });
   try { localStorage.setItem(KEY, JSON.stringify(book)); } catch (e) {}
 }
 
@@ -142,19 +167,6 @@ function tooSimilar(a, b) {
   const ta = A.split(' '), tb = B.split(' '), sb = new Set(tb);
   const inter = ta.filter(t => sb.has(t)).length, uni = new Set(ta.concat(tb)).size;
   return uni > 0 && inter / uni >= 0.8;
-}
-const VERBS = new Set(('am is are was were be been do does did have has had can could will would shall should may might must '+
- 'go goes went come comes came get gets got make makes made take takes took see sees saw look looks looked like likes liked '+
- 'want wants wanted eat eats ate drink drinks drank read reads write writes wrote play plays played run runs ran sit sits sat '+
- 'stand stands stood open opens opened close closes closed buy buys bought give gives gave put puts say says said tell tells told '+
- 'think thinks thought know knows knew live lives lived work works worked study studies studied help helps helped need needs needed '+
- 'feel feels felt find finds found start starts started stop stops stopped wear wears wore watch watches watched listen listens '+
- 'speak speaks spoke walk walks walked sleep sleeps slept swim swims swam ring rings rang arrive arrives arrived repeat repeats '+
- 'thank thanks thanked excuse pardon show shows showed bring brings brought').split(' '));
-function hasVerb(s) {
-  const t = normSent(s).split(' ').filter(Boolean);
-  if (t.some(x => VERBS.has(x))) return true;
-  return t.some(x => x.length > 3 && /(ed|ing|s)$/.test(x));
 }
 
 /* ========== 英语句子语法检查器（规则式，不依赖 AI）==========
@@ -601,6 +613,8 @@ function goBack() {
 function setHead(t, s, showBack) {
   $('#hTitle').textContent = t; $('#hSub').textContent = s;
   $('#backBtn').style.display = showBack ? 'inline-block' : 'none';
+  /* 首页显示「回科目选择」，进到里层换成「← 返回」——两个返回并排孩子会搞不清点哪个 */
+  const hl = $('#homeLink'); if (hl) hl.style.display = showBack ? 'none' : 'inline-block';
 }
 
 function renderHome() {
@@ -654,6 +668,8 @@ function modeCard(mode, title, desc, total) {
     '<span class="big-card-desc">' + desc + '</span></span>' +
     '<span class="prog">' + d + '/' + total + '</span></button>';
 }
+/* 「再来一轮」：全做完之后想重练，从头开始（进度存档保持不变，不会倒退） */
+function restartMode(m) { openMode(m); }
 function openMode(m) {
   cur.mode = m;
   if (m === 'card') startCard();
@@ -664,17 +680,18 @@ function openMode(m) {
 /* ========== ① 记忆卡：正面英文 → 翻面默写 ========== */
 let cd = { i: 0, flipped: false, ok: 0 };
 function startCard() {
-  cd = { i: 0, flipped: false, ok: 0 };
+  const st = modeResume(cur.sec.id, 'card', cur.sec.words.length);
+  cd = { i: st, flipped: false, ok: st ? Math.min(secScore(cur.sec.id, 'card'), st) : 0 };
   setHead('🃏 记忆卡 · ' + cur.sec.title, '正面记住样子，翻面凭记忆拼出来', true);
   cardRender();
 }
 function cardRender() {
   const ws = cur.sec.words;
   if (cd.i >= ws.length) {
-    setProg(cur.sec.id, 'card', ws.length, ws.length);
+    setProg(cur.sec.id, 'card', ws.length, ws.length, cd.ok);
     $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (cd.ok === ws.length ? '🏆' : '🃏') +
       '</div><div style="font-size:17px;margin-top:8px">这一节 ' + ws.length + ' 个单词过完了，拼对 ' + cd.ok + ' 个</div>' +
-      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startCard()">再来一轮</button>' +
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="restartMode(\'card\')">再来一轮</button>' +
       '<button class="btn btn-ghost" onclick="openMode(\'recall\')">去背诵 →</button></div></div>';
     return;
   }
@@ -706,11 +723,11 @@ function cardFlip() { cd.flipped = true; cardRender(); }
 function cardCheck() {
   const w = cur.sec.words[cd.i], v = ($('#cdIn') || {}).value || '';
   const ok = normalize(v) === normalize(w.w);
-  if (ok) cd.ok++; else addWrong(w, cur.sec, cur.unit);
+  if (ok) cd.ok++; else addWrong(w, cur.sec, cur.unit, 'card', v);
   $('#cdFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
     (ok ? '🎉 拼对了！' : '💪 正确拼写是 <b>' + esc(w.w) + '</b>　（你写的是「' + esc(v || '（空）') + '」）<br>这个词已经放进错题本，等下可以再练一次。') +
     '</div><button class="btn btn-main" onclick="cardNext()">下一个 →</button>';
-  setProg(cur.sec.id, 'card', cd.i + 1, cur.sec.words.length);
+  setProg(cur.sec.id, 'card', cd.i + 1, cur.sec.words.length, cd.ok);
 }
 function cardNext() { cd.i++; cd.flipped = false; cardRender(); }
 function pills(i, n) {
@@ -726,17 +743,18 @@ function shortTitle(t) { return String(t).split('\u3000')[0].trim(); }
 
 let rc = { i: 0, ok: 0 };
 function startRecall() {
-  rc = { i: 0, ok: 0 };
+  const st = modeResume(cur.sec.id, 'recall', cur.sec.words.length);
+  rc = { i: st, ok: st ? Math.min(secScore(cur.sec.id, 'recall'), st) : 0 };
   setHead('🧠 背诵 · ' + shortTitle(cur.sec.title), '只看中文，把英文写出来', true);
   recallRender();
 }
 function recallRender() {
   const ws = cur.sec.words;
   if (rc.i >= ws.length) {
-    setProg(cur.sec.id, 'recall', ws.length, ws.length);
+    setProg(cur.sec.id, 'recall', ws.length, ws.length, rc.ok);
     $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (rc.ok === ws.length ? '🏆' : '🧠') +
       '</div><div style="font-size:17px;margin-top:8px">背完 ' + ws.length + ' 个，写对 ' + rc.ok + ' 个</div>' +
-      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startRecall()">再来一轮</button>' +
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="restartMode(\'recall\')">再来一轮</button>' +
       '<button class="btn btn-ghost" onclick="openMode(\'make\')">去造句 →</button></div></div>';
     return;
   }
@@ -760,30 +778,33 @@ function recallHint() {
 function recallCheck() {
   const w = cur.sec.words[rc.i], v = ($('#rcIn') || {}).value || '';
   const ok = normalize(v) === normalize(w.w);
-  if (ok) rc.ok++; else addWrong(w, cur.sec, cur.unit);
+  if (ok) rc.ok++; else addWrong(w, cur.sec, cur.unit, 'recall', v);
   $('#rcFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
     (ok ? '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
         : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>（你写的是「' + esc(v || '（空）') + '」）<br>' +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>') +
     '</div><button class="btn btn-main" onclick="recallNext()">下一个 →</button>';
-  setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length);
+  setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length, rc.ok);
 }
 function recallNext() { rc.i++; recallRender(); }
 
 /* ========== ③ 造句：先看 3 例句，再自己造 3 句 ========== */
 let mk = { i: 0, j: 0, sents: [], ok: 0 };
 function startMake() {
-  mk = { i: 0, j: 0, sents: [], ok: 0 };
+  const total = cur.sec.words.length * MK_PER_WORD;
+  const st = modeResume(cur.sec.id, 'make', total);
+  mk = { i: Math.floor(st / MK_PER_WORD), j: st % MK_PER_WORD, sents: [],
+         ok: st ? Math.min(secScore(cur.sec.id, 'make'), st) : 0 };
   setHead('🖊️ 造句 · ' + cur.sec.title, '每个词造 3 句不一样的话，每句至少 5 个单词', true);
   makeRender();
 }
 function makeRender() {
   const ws = cur.sec.words, total = ws.length * MK_PER_WORD;
   if (mk.i >= ws.length) {
-    setProg(cur.sec.id, 'make', total, total);
+    setProg(cur.sec.id, 'make', total, total, mk.ok);
     $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (mk.ok === total ? '🏆' : '🖊️') +
       '</div><div style="font-size:17px;margin-top:8px">' + ws.length + ' 个词、每个 3 句，一共造了 ' + mk.ok + ' / ' + total + ' 句</div>' +
-      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startMake()">再来一轮</button></div></div>';
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="restartMode(\'make\')">再来一轮</button></div></div>';
     return;
   }
   const w = ws[mk.i], mine = (mk.sents[mk.i] || []).filter(Boolean);
@@ -876,10 +897,10 @@ async function makeCheck() {
 function makePass(ok) {
   const w = cur.sec.words[mk.i], s = window.__mkS || '';
   (mk.sents[mk.i] = mk.sents[mk.i] || [])[mk.j] = s;
-  if (ok) mk.ok++; else addWrong(w, cur.sec, cur.unit);
+  if (ok) mk.ok++; else addWrong(w, cur.sec, cur.unit, 'make', s);
   const total = cur.sec.words.length * MK_PER_WORD;
   const doneN = mk.i * MK_PER_WORD + mk.j + 1;
-  setProg(cur.sec.id, 'make', doneN, total);
+  setProg(cur.sec.id, 'make', doneN, total, mk.ok);
   /* 导航交给调用者（makeAccept / makeGiveUp），这里只记账 */
 }
 /* 一次点击就前进——「收下」之后还要再点一次「下一句」是多余操作 */

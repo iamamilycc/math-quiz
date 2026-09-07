@@ -81,6 +81,36 @@ def main():
             pg.fill('#mkIn', 'He likes this excuse very much.'); btn('检查我的句子').click(); pg.wait_for_timeout(250)
             ck('第 2 句重复被挡', '太像' in T())
 
+            # ---- 错题本：三种练法都错同一个词 → 合并成一条，但各自写错的内容都要留下 ----
+            # ⚠️ 进度也要清——三种练法现在都会「续做」，不清的话会停在各自上次的位置，
+            #    三次错的就不是同一个词了，合并断言自然对不上。
+            pg.evaluate("localStorage.removeItem('mathquiz_wrongbook_v1'); localStorage.removeItem('mathquiz_words_prog_v1'); renderHome(); openUnit(0); openSec(0); openMode('card'); cardFlip()")
+            pg.wait_for_timeout(200)
+            pg.fill('#cdIn', 'aaa'); btn('检查').click(); pg.wait_for_timeout(200)
+            pg.evaluate("renderHome(); openUnit(0); openSec(0); openMode('recall')"); pg.wait_for_timeout(250)
+            pg.fill('#rcIn', 'bbb'); btn('检查').click(); pg.wait_for_timeout(200)
+            pg.evaluate("renderHome(); openUnit(0); openSec(0); openMode('make')"); pg.wait_for_timeout(250)
+            # 用一句有语法错的：只有判错时才会出现「这句先跳过」，通过的句子本来就不该进错题本
+            pg.fill('#mkIn', 'He like this excuse very much.')
+            btn('检查我的句子').click(); pg.wait_for_timeout(350)
+            btn('这句先跳过').click(); pg.wait_for_timeout(250)
+            book = pg.evaluate("JSON.parse(localStorage.getItem('mathquiz_wrongbook_v1')||'[]')")
+            ck('同一个词合并成一条', len(book) == 1, len(book))
+            if book:
+                ua = book[0].get('userAnswer', '')
+                ck('错误次数累计到 3', book[0].get('wrongCount') == 3, book[0].get('wrongCount'))
+                ck('拼写写错的内容留下了', '记忆卡拼写写成「aaa」' in ua, ua)
+                ck('背诵写错的内容留下了', '背诵写成「bbb」' in ua, ua)
+                ck('造句写的内容留下了', '造句写成' in ua, ua)
+
+            # ---- 回得去科目列表（不能只靠浏览器上一页）----
+            pg.evaluate("renderHome()"); pg.wait_for_timeout(200)
+            ck('首页有「返回科目选择」链接', pg.evaluate(
+                "(()=>{const a=document.getElementById('homeLink');return !!a && a.getAttribute('href')==='index.html' && a.style.display!=='none';})()"))
+            pg.evaluate("openUnit(0)"); pg.wait_for_timeout(200)
+            ck('进到里层后换成「← 返回」不并排', pg.evaluate(
+                "(()=>{const a=document.getElementById('homeLink'),b=document.getElementById('backBtn');return a.style.display==='none' && b.style.display!=='none';})()"))
+
             ck('全程无 JS 错误', not errs, errs[:2])
             b.close()
     finally:
