@@ -104,6 +104,52 @@ def validate(data):
             if n_multi < len(s["notes"]):
                 errs.append("%s 多选题 %d 道，少于知识点数 %d（每个想一想应配一道）"
                             % (sid, n_multi, len(s["notes"])))
+    # ==================== 全局规则（跨章检查）====================
+    allq = [(c["id"], sec["id"], q)
+            for c in data["chapters"] for sec in c["sections"] for q in sec["quiz"]]
+
+    # G1 错题本去重键 subject|point|stem 必须全局唯一，否则两道题在错题本里会被合并成一题
+    seen_key = {}
+    for cid, sid, q in allq:
+        k = (q["point"], q["stem"])
+        if k in seen_key:
+            errs.append("错题本去重键碰撞：%s 与 %s 的 point+stem 完全相同（%s），"
+                        "错题本只会保留一题" % (seen_key[k], "%s/第%s题" % (sid, q["id"]), q["point"]))
+        seen_key[k] = "%s/第%s题" % (sid, q["id"])
+
+    # G2 单选题答案不得集中在某个字母（孩子发现规律就能靠猜蒙对）
+    ch = [q["answer"] for _, _, q in allq if q["type"] == "choice"]
+    if ch:
+        c_cnt = {}
+        for a in ch:
+            c_cnt[a] = c_cnt.get(a, 0) + 1
+        for letter, n in sorted(c_cnt.items()):
+            if n / len(ch) > 0.40:
+                errs.append("单选题答案集中：%s 占 %d/%d（%.1f%%），超过 40%% 上限，"
+                            "孩子只要固定选 %s 就能蒙对大半"
+                            % (letter, n, len(ch), n * 100.0 / len(ch), letter))
+
+    # G3 同一节内的判断题不得答案全同（两道都「对」或都「错」同样可猜）
+    for c in data["chapters"]:
+        for sec in c["sections"]:
+            js = [q["answer"] for q in sec["quiz"] if q["type"] == "judge"]
+            if len(js) >= 2 and len(set(js)) == 1:
+                errs.append("%s 的 %d 道判断题答案全是「%s」，应有对有错" % (sec["id"], len(js), js[0]))
+
+    # G4 考「缩写」的题不能用 fill：正确答案必然含撇号，而撇号在 iPad 上会被换成弯引号判错
+    for cid, sid, q in allq:
+        if q["type"] == "fill" and re.search(r"缩写", q["stem"]):
+            errs.append("%s/第%s题 是填空题却在考缩写：答案必然含撇号，"
+                        "iPad 智能引号会导致写对也判错，应改成选择题" % (sid, q["id"]))
+
+    # G5 fill 答案不得有 normalize 后完全相同的冗余变体（判分不分大小写、忽略空白）
+    for cid, sid, q in allq:
+        if q["type"] == "fill":
+            normed = [re.sub(r"\s+", "", a.strip()).lower() for a in q["answer"]]
+            if len(normed) != len(set(normed)):
+                errs.append("%s/第%s题 的 fill 答案有冗余变体（判分会忽略大小写和空白）：%s"
+                            % (sid, q["id"], q["answer"]))
+
     return errs
 
 
