@@ -164,7 +164,7 @@ function hasWord(s, w) {
                 speak:['spoke','spoken'], sing:['sang','sung'], swim:['swam','swum'], fly:['flew','flown'],
                 drive:['drove','driven'], fall:['fell','fallen'], ring:['rang','rung'],
                 tooth:['teeth'], foot:['feet'], child:['children'], man:['men'], woman:['women'],
-                mouse:['mice'], person:['people'], knife:['knives'], leaf:['leaves'],
+                mouse:['mice'], person:['people'], knife:['knives'], leaf:['leaves'], loaf:['loaves'], half:['halves'], thief:['thieves'], self:['selves'],
                 shelf:['shelves'], wife:['wives'], life:['lives'],
                 sweep:['swept'],sleep:['slept'],keep:['kept'],feel:['felt'],meet:['met'],leave:['left'],lose:['lost'],build:['built'],burn:['burnt', 'burned'],dream:['dreamt', 'dreamed'],smell:['smelt', 'smelled'],hang:['hung'],shine:['shone'],shoot:['shot'],sit:['sat'],stand:['stood'],wake:['woke'],wear:['wore', 'worn'],win:['won'],hide:['hid', 'hidden'],draw:['drew', 'drawn'],blow:['blew', 'blown'],know:['knew', 'known'],throw:['threw', 'thrown'],grow:['grew', 'grown'],fly:['flew', 'flown'],begin:['began', 'begun'],break:['broke', 'broken'],choose:['chose', 'chosen'],forget:['forgot', 'forgotten'],freeze:['froze', 'frozen'],steal:['stole', 'stolen'],swim:['swam', 'swum'],ride:['rode', 'ridden'],rise:['rose', 'risen'],drive:['drove', 'driven'],sell:['sold'],tell:['told'],feed:['fed'],lead:['led'],mean:['meant'],cost:['cost'],hurt:['hurt'],shut:['shut'],let:['let'],set:['set'], };
   if (IRR[base]) forms.push.apply(forms, IRR[base]);
@@ -245,6 +245,12 @@ const SUBJ_PL = new Set(['we','they','you','these','those','people']);
 /* 既是动词也是形容词的词：is open / very clean / the door is shut 都是对的，
    这些词在「be + 动词原形」和「very + 动词」两条规则里一律不报。
    （两条误报都是全册例句自检撞出来的。） */
+/* 既是动词也是常见名词的词：the right answer / a long walk 里它们都是名词，
+   判「名词主语漏 s」时不能把它们当动词。 */
+const ALSO_NOUN = new Set(['answer','walk','work','watch','play','study','book','dress','ring','catch',
+                           'drink','cook','show','call','name','hope','need','help','look','turn','use',
+                           'visit','wish','start','end','paint','dust','sleep','jump','swim','run','shine',
+                           'water','park','drop','tap','tie','post','change','rest','face','hand','light']);
 const ALSO_ADJ = new Set(['clean','open','close','shut','free','warm','cool','slow','right','light',
                           'empty','dry','quiet','still','well','fine','short','long','fast','hard',
                           'busy','tired','fat','thin','tall','sharp','blunt','full','large','little']);
@@ -258,7 +264,10 @@ const PURE_NOUNS = (() => {
   try {
     DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
       const k = String(w.w).toLowerCase();
-      if (String(w.pos).includes('名词') && k.indexOf(' ') < 0 && !BASE_VERBS.has(k) &&
+      /* 兼形容词的词不能算「确定是名词」——the right answer 里 right 是形容词，
+         把它当主语就会把 answer 误判成动词。 */
+      if (String(w.pos).includes('名词') && !String(w.pos).includes('形容词') &&
+          !String(w.pos).includes('动词') && k.indexOf(' ') < 0 && !BASE_VERBS.has(k) &&
           !THIRD_TO_BASE[k] && !PAST_TO_BASE[k]) set.add(k);
     })));
   } catch (e) {}
@@ -440,7 +449,9 @@ function checkGrammar(sent) {
                 ③ 动词不能是原形与过去式同形的（the hairdresser cut… 判不出时态）
                 ④ 动词后面那个词不能是动词（The school work is hard 里 work 是名词） */
     const nx3 = t[i + 3];
-    if (!governed && !pastCtx && DET.has(w) && nx && nx2 &&
+    /* ⚠️ 并列主语是复数：My uncle and his wife live here. 里的 live 是对的 */
+    const compound = t.slice(0, i + 2).includes('and');
+    if (!governed && !pastCtx && !compound && DET.has(w) && nx && nx2 &&
         PURE_NOUNS.has(nx) && !/s$/.test(nx) && !IRREG_PLURAL.has(nx) && !SINGULAR_S.has(nx) &&
         BASE_VERBS.has(nx2) && !SAME_BASE_PAST.has(nx2) && !ALSO_ADJ.has(nx2) &&
         !BE_ALL.has(nx2) && !MODALS.has(nx2) && !AUX_DO.has(nx2) &&

@@ -42,7 +42,7 @@ IRREGULAR = {
     # 不规则名词复数：写 teeth 来练 tooth 也算用上了
     'tooth': ['teeth'], 'foot': ['feet'], 'child': ['children'], 'man': ['men'],
     'woman': ['women'], 'mouse': ['mice'], 'person': ['people'], 'knife': ['knives'],
-    'leaf': ['leaves'], 'shelf': ['shelves'], 'wife': ['wives'], 'life': ['lives'],
+    'leaf': ['leaves'], 'loaf': ['loaves'], 'half': ['halves'], 'thief': ['thieves'], 'self': ['selves'], 'shelf': ['shelves'], 'wife': ['wives'], 'life': ['lives'],
     'sweep': ['swept'],
     'sleep': ['slept'],
     'keep': ['kept'],
