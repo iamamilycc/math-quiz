@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>新概念英语第一册 · 单词</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f5f6f8; color:#222; }
+.page { max-width:680px; margin:0 auto; padding:20px 16px 60px; }
+h1 { font-size:21px; margin:8px 0 4px; }
+.subtitle { color:#777; font-size:14px; margin:0 0 20px; }
+.back-link { display:inline-block; color:#3a6df0; text-decoration:none; font-size:14px; margin-bottom:12px; background:none; border:none; padding:0; cursor:pointer; }
+.card-list { display:flex; flex-direction:column; gap:12px; }
+.big-card { display:flex; justify-content:space-between; align-items:center; background:#fff; border-radius:12px;
+  padding:18px 20px; text-decoration:none; color:#222; box-shadow:0 1px 3px rgba(0,0,0,.08);
+  border:none; width:100%; font-size:16px; text-align:left; cursor:pointer; border-left:4px solid #7b4bd6; }
+.big-card-title { font-size:16px; font-weight:600; }
+.big-card-desc { font-size:12px; color:#999; margin-top:3px; }
+.arrow { color:#bbb; font-size:20px; }
+.prog { font-size:12px; color:#7b4bd6; font-weight:600; }
+
+.mode-bar { display:flex; gap:8px; margin:14px 0 16px; }
+.mode-btn { flex:1; padding:11px 6px; border-radius:8px; border:none; background:#fff; color:#666;
+  font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.mode-btn.active { background:#7b4bd6; color:#fff; }
+
+.stage { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.pos-line { color:#999; font-size:12.5px; margin-bottom:8px; }
+.word-big { font-size:30px; font-weight:700; letter-spacing:.5px; }
+.ipa { color:#888; font-size:15px; margin-top:4px; }
+.zh-big { font-size:20px; font-weight:600; margin-top:4px; }
+.eg { background:#faf7ff; border-left:3px solid #d9c9f5; padding:9px 12px; border-radius:6px;
+  margin:6px 0; font-size:14.5px; line-height:1.65; }
+.hint-box { background:#fff8e6; border-left:3px solid #f0b429; padding:9px 12px; border-radius:6px;
+  margin:10px 0; font-size:13.5px; line-height:1.65; color:#6b5518; }
+.inp { width:100%; padding:11px 12px; font-size:16px; border:2px solid #e3e3e8; border-radius:9px;
+  font-family:-apple-system,"SF Mono",Menlo,monospace; }
+.inp:focus { outline:none; border-color:#7b4bd6; }
+textarea.inp { min-height:74px; font-size:15px; line-height:1.5; resize:vertical; }
+.btn { padding:11px 18px; border-radius:9px; border:none; font-size:15px; font-weight:600; cursor:pointer; margin:8px 6px 0 0; }
+.btn-main { background:#7b4bd6; color:#fff; }
+.btn-ghost { background:#eee; color:#555; }
+.btn-mini { padding:4px 9px; font-size:12px; border-radius:6px; border:none; background:#efe8fb; color:#7b4bd6; cursor:pointer; }
+.fb { margin-top:12px; padding:11px 13px; border-radius:9px; font-size:14.5px; line-height:1.7; }
+.fb.ok { background:#e8f7ee; color:#1c6b3a; }
+.fb.bad { background:#fdecea; color:#8c2f26; }
+.fb.tip { background:#eef2fe; color:#2a4a9c; }
+.counter { color:#999; font-size:12.5px; margin-bottom:10px; }
+.pills { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
+.pill { width:9px; height:9px; border-radius:50%; background:#e0e0e6; }
+.pill.ok { background:#3e8e5a; } .pill.bad { background:#e05a4a; } .pill.now { box-shadow:0 0 0 2px #7b4bd6; }
+.mine { font-size:14px; color:#555; padding:4px 0 4px 10px; border-left:2px solid #ddd; margin:4px 0; }
+.done-big { text-align:center; padding:20px 0; }
+.done-emoji { font-size:44px; }
+ul.chk { list-style:none; padding:0; margin:8px 0 0; }
+ul.chk li { padding:5px 0; font-size:14px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+  <button class="back-link" id="backBtn" onclick="goBack()" style="display:none">← 返回</button>
+  <h1 id="hTitle">新概念英语第一册 · 单词</h1>
+  <p class="subtitle" id="hSub">记忆 · 背诵 · 造句</p>
+  <div id="view"></div>
+</div>
+
+<script>
+const DATA = {"units": [{"id": "w-u1", "title": "第一单元　Lesson 1-24", "sections": [{"id": "w-u1-s1", "title": "Lesson 1-2　Excuse me!　这是你的……吗？", "words": [{"w": "excuse", "ipa": "/ɪkˈskjuːz/", "pos": "v. 动词", "zh": "原谅（跟 me 连用时表示「对不起，打扰一下」）", "lesson": 1, "egs": ["Excuse me, is this your handbag?", "Excuse me, where is the nearest station?", "Please excuse my brother for being late."]}, {"w": "me", "ipa": "/miː/", "pos": "pron. 代词（宾格）", "zh": "我（我的宾格）", "lesson": 1, "egs": ["Please give me a cup of tea.", "My father often reads stories to me.", "Can you show me the way home?"]}, {"w": "yes", "ipa": "/jes/", "pos": "adv. 副词", "zh": "是的", "lesson": 1, "egs": ["Yes, I would like some hot tea.", "She said yes to my invitation happily.", "Yes, that is my brother over there."]}, {"w": "is", "ipa": "/ɪz/", "pos": "v. 动词", "zh": "be 动词的第三人称单数现在式", "lesson": 1, "egs": ["My father is a very busy doctor.", "The weather is quite cold this morning.", "Is this your umbrella near the door?"]}, {"w": "this", "ipa": "/ðɪs/", "pos": "pron. 代词", "zh": "这，这个", "lesson": 1, "egs": ["This is my new English dictionary.", "Is this your handbag on the table?", "This morning I got up very early."]}, {"w": "your", "ipa": "/jɔː/", "pos": "adj. 物主代词", "zh": "你的，你们的", "lesson": 1, "egs": ["Is this your coat or her coat?", "Your English is much better than mine.", "I found your pen under the desk."]}, {"w": "handbag", "ipa": "/ˈhændbæɡ/", "pos": "n. 名词", "zh": "手提包", "lesson": 1, "egs": ["Is this your handbag on the chair?", "My mother bought a new handbag yesterday.", "She put her keys into the handbag."]}, {"w": "pardon", "ipa": "/ˈpɑːdn/", "pos": "int. 感叹语", "zh": "什么，请再说一遍", "lesson": 1, "egs": ["Pardon me, I did not hear you.", "Pardon? Please repeat the question more slowly.", "I beg your pardon for being so late."]}, {"w": "it", "ipa": "/ɪt/", "pos": "pron. 代词", "zh": "它", "lesson": 1, "egs": ["It is a very beautiful sunny day.", "I like this book because it is funny.", "Is it your bag under the chair?"]}, {"w": "thank you", "ipa": "/ˈθæŋk juː/", "pos": "phr. 词组", "zh": "谢谢你", "lesson": 1, "egs": ["Thank you for helping me with my homework.", "I want to thank you for the present.", "Thank you very much, that was really kind."]}, {"w": "very much", "ipa": "/ˈveri mʌtʃ/", "pos": "adv. 副词词组", "zh": "非常，很", "lesson": 1, "egs": ["I like this story book very much.", "She misses her grandmother very much.", "We enjoyed the football match very much."]}, {"w": "pen", "ipa": "/pen/", "pos": "n. 名词", "zh": "钢笔", "lesson": 2, "egs": ["My uncle gave me a new pen.", "Is this red pen yours or mine?", "I write my homework with a pen."]}, {"w": "pencil", "ipa": "/ˈpensl/", "pos": "n. 名词", "zh": "铅笔", "lesson": 2, "egs": ["Please lend me your pencil for a minute.", "The pencil fell down under the desk.", "She draws pictures with a soft pencil."]}, {"w": "book", "ipa": "/bʊk/", "pos": "n. 名词", "zh": "书", "lesson": 2, "egs": ["This book is really interesting to read.", "I borrowed a book from the library.", "My brother reads a book every evening."]}, {"w": "watch", "ipa": "/wɒtʃ/", "pos": "n. 名词", "zh": "手表", "lesson": 2, "egs": ["My father wears an old gold watch.", "Is this your watch on the table?", "She got a new watch for her birthday."]}, {"w": "coat", "ipa": "/kəʊt/", "pos": "n. 名词", "zh": "外套，上衣", "lesson": 2, "egs": ["Put on your coat before you go.", "This warm coat belongs to my sister.", "He left his coat in the classroom."]}, {"w": "dress", "ipa": "/dres/", "pos": "n. 名词", "zh": "连衣裙", "lesson": 2, "egs": ["My mother made a beautiful blue dress.", "She wore a long dress to the party.", "This dress is too small for me."]}, {"w": "skirt", "ipa": "/skɜːt/", "pos": "n. 名词", "zh": "裙子（半身裙）", "lesson": 2, "egs": ["Her new skirt is dark green.", "I bought a short skirt last Sunday.", "This skirt looks very nice on you."]}, {"w": "shirt", "ipa": "/ʃɜːt/", "pos": "n. 名词", "zh": "衬衫", "lesson": 2, "egs": ["My father wears a white shirt today.", "Is this shirt yours or your brother's?", "He washed his dirty shirt this morning."]}, {"w": "car", "ipa": "/kɑː/", "pos": "n. 名词", "zh": "汽车", "lesson": 2, "egs": ["We go to school by car.", "My uncle bought a small red car.", "The car stopped in front of us."]}, {"w": "house", "ipa": "/haʊs/", "pos": "n. 名词", "zh": "房子", "lesson": 2, "egs": ["Their house is near the old school.", "We live in a big white house.", "There are four rooms in the house."]}]}, {"id": "w-u1-s2", "title": "Lesson 3-4　Sorry, sir.　对不起，先生", "words": [{"w": "umbrella", "ipa": "/ʌmˈbrelə/", "pos": "n. 名词", "zh": "雨伞", "lesson": 3, "egs": ["Take your umbrella because it may rain.", "I left my umbrella on the bus.", "This black umbrella is not mine."]}, {"w": "please", "ipa": "/pliːz/", "pos": "int. 感叹语", "zh": "请", "lesson": 3, "egs": ["Please close the window before you leave.", "Could you please help me with this?", "Please tell me your telephone number."]}, {"w": "here", "ipa": "/hɪə/", "pos": "adv. 副词", "zh": "这里", "lesson": 3, "egs": ["Here is my ticket and my passport.", "Please come here and sit down quietly.", "We have lived here for ten years."]}, {"w": "my", "ipa": "/maɪ/", "pos": "adj. 物主代词", "zh": "我的", "lesson": 3, "egs": ["This is not my umbrella at all.", "My sister works in a big hospital.", "I lost my ticket on the train."]}, {"w": "ticket", "ipa": "/ˈtɪkɪt/", "pos": "n. 名词", "zh": "票", "lesson": 3, "egs": ["Here is my ticket for the concert.", "He bought two tickets to Shanghai.", "Please show your ticket to the officer."]}, {"w": "number", "ipa": "/ˈnʌmbə/", "pos": "n. 名词", "zh": "号码，数字", "lesson": 3, "egs": ["My telephone number is very easy to remember.", "What is the number of your house?", "A large number of students came here."]}, {"w": "five", "ipa": "/faɪv/", "pos": "num. 数词", "zh": "五", "lesson": 3, "egs": ["There are five books on the shelf.", "We get up at five every morning.", "My little brother is only five years old."]}, {"w": "sorry", "ipa": "/ˈsɒri/", "pos": "adj. 形容词", "zh": "对不起的，抱歉的", "lesson": 3, "egs": ["I am very sorry about the mistake.", "Sorry, I did not hear your question.", "He said sorry to his little sister."]}, {"w": "sir", "ipa": "/sɜː/", "pos": "n. 名词", "zh": "先生（对男子的尊称）", "lesson": 3, "egs": ["Sorry, sir, this is not your coat.", "Good morning, sir, may I help you?", "The waiter said thank you, sir."]}, {"w": "cloakroom", "ipa": "/ˈkləʊkrʊm/", "pos": "n. 名词", "zh": "衣帽间", "lesson": 4, "egs": ["My coat is in the cloakroom downstairs.", "Please leave your bag in the cloakroom.", "The cloakroom is next to the main door."]}, {"w": "suit", "ipa": "/suːt/", "pos": "n. 名词", "zh": "一套衣服，西装", "lesson": 4, "egs": ["My father wears a dark blue suit.", "This new suit is very expensive.", "He bought a grey suit for the wedding."]}, {"w": "school", "ipa": "/skuːl/", "pos": "n. 名词", "zh": "学校", "lesson": 4, "egs": ["I go to school by bike every day.", "Our school is near the small park.", "The children come home from school at four."]}, {"w": "teacher", "ipa": "/ˈtiːtʃə/", "pos": "n. 名词", "zh": "老师", "lesson": 4, "egs": ["My English teacher is very kind.", "The teacher asked us a difficult question.", "She wants to be a maths teacher."]}, {"w": "son", "ipa": "/sʌn/", "pos": "n. 名词", "zh": "儿子", "lesson": 4, "egs": ["Their son studies at a good school.", "Mr. Green has one son and two daughters.", "My aunt's son is only six years old."]}, {"w": "daughter", "ipa": "/ˈdɔːtə/", "pos": "n. 名词", "zh": "女儿", "lesson": 4, "egs": ["Their daughter plays the piano very well.", "My neighbour has a clever little daughter.", "She is the daughter of a famous doctor."]}]}]}]};
+
+/* ========== 基础 ========== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function normalize(t) {
+  if (t === null || t === undefined) return '';
+  return String(t).trim().replace(/\s+/g, '').replace(/　/g, '').toLowerCase();
+}
+/* 造句用：保留词边界的归一 */
+function normSent(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function wordCount(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
+
+const PROG_KEY = 'mathquiz_words_prog_v1';
+function getProg() { try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); } catch (e) { return {}; } }
+function setProg(sid, mode, done, total) {
+  const p = getProg(); p[sid] = p[sid] || {};
+  p[sid][mode] = Math.max((p[sid][mode] || 0), done);
+  p[sid][mode + '_n'] = total;
+  try { localStorage.setItem(PROG_KEY, JSON.stringify(p)); } catch (e) {}
+}
+function secDone(sid, mode) { const p = getProg()[sid] || {}; return p[mode] || 0; }
+
+/* 错题本：与其他科目共用，subject 用 engword */
+function addWrong(word, sec, unit) {
+  const KEY = 'mathquiz_wrongbook_v1';
+  let book = []; try { book = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+  const now = new Date().toISOString();
+  const key = 'engword|' + word.w + '|' + word.zh;
+  const ex = book.find(b => b.key === key);
+  if (ex) { ex.wrongCount += 1; ex.lastWrongAt = now; }
+  else book.push({ key, subject: 'engword', chapterTitle: unit.title, sectionTitle: sec.title,
+    point: word.w, stem: word.pos + ' ' + word.zh, userAnswer: '（拼写/背诵未过）',
+    correctAnswer: word.w, explain: '例句：' + word.egs[0], wrongCount: 1, firstWrongAt: now, lastWrongAt: now });
+  try { localStorage.setItem(KEY, JSON.stringify(book)); } catch (e) {}
+}
+
+/* 发音（浏览器 TTS，没有就静默） */
+function speak(t) {
+  try { const u = new SpeechSynthesisUtterance(String(t)); u.lang = 'en-US'; u.rate = .9;
+    speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
+}
+
+/* ========== 造句检查（不依赖任何 AI；规则与精读站一致） ========== */
+const MK_PER_WORD = 3, MK_MIN_WORDS = 5;
+function hasWord(s, w) {
+  const base = normSent(w); if (!base) return true;
+  const S = ' ' + normSent(s) + ' ';
+  if (base.indexOf(' ') >= 0) return S.indexOf(' ' + base + ' ') >= 0;
+  const stem = base.replace(/[ey]$/, '');
+  const forms = [base, base+'s', base+'es', base+'d', base+'ed', base+'ing',
+                 stem+'ing', stem+'ed', stem+'ies', stem+'ied'];
+  return forms.some(f => S.indexOf(' ' + f + ' ') >= 0);
+}
+function tooSimilar(a, b) {
+  const A = normSent(a), B = normSent(b);
+  if (!A || !B) return false;
+  if (A === B) return true;
+  const ta = A.split(' '), tb = B.split(' '), sb = new Set(tb);
+  const inter = ta.filter(t => sb.has(t)).length, uni = new Set(ta.concat(tb)).size;
+  return uni > 0 && inter / uni >= 0.8;
+}
+const VERBS = new Set(('am is are was were be been do does did have has had can could will would shall should may might must '+
+ 'go goes went come comes came get gets got make makes made take takes took see sees saw look looks looked like likes liked '+
+ 'want wants wanted eat eats ate drink drinks drank read reads write writes wrote play plays played run runs ran sit sits sat '+
+ 'stand stands stood open opens opened close closes closed buy buys bought give gives gave put puts say says said tell tells told '+
+ 'think thinks thought know knows knew live lives lived work works worked study studies studied help helps helped need needs needed '+
+ 'feel feels felt find finds found start starts started stop stops stopped wear wears wore watch watches watched listen listens '+
+ 'speak speaks spoke walk walks walked sleep sleeps slept swim swims swam ring rings rang arrive arrives arrived repeat repeats '+
+ 'thank thanks thanked excuse pardon show shows showed bring brings brought').split(' '));
+function hasVerb(s) {
+  const t = normSent(s).split(' ').filter(Boolean);
+  if (t.some(x => VERBS.has(x))) return true;
+  return t.some(x => x.length > 3 && /(ed|ing|s)$/.test(x));
+}
+
+/* ========== 路由 ========== */
+let cur = { unit: null, sec: null, mode: null };
+function goBack() {
+  if (cur.mode) { cur.mode = null; renderSec(); }
+  else if (cur.sec) { cur.sec = null; renderUnit(); }
+  else if (cur.unit) { cur.unit = null; renderHome(); }
+}
+function setHead(t, s, showBack) {
+  $('#hTitle').textContent = t; $('#hSub').textContent = s;
+  $('#backBtn').style.display = showBack ? 'inline-block' : 'none';
+}
+
+function renderHome() {
+  cur = { unit: null, sec: null, mode: null };
+  setHead('新概念英语第一册 · 单词', '按课次分单元 · 记忆、背诵、造句三步走', false);
+  $('#view').innerHTML = '<div class="card-list">' + DATA.units.map((u, i) => {
+    const nw = u.sections.reduce((a, s) => a + s.words.length, 0);
+    const dn = u.sections.reduce((a, s) => a + Math.min(secDone(s.id, 'card'), s.words.length), 0);
+    return '<button class="big-card" onclick="openUnit(' + i + ')">' +
+      '<span><span class="big-card-title">' + esc(u.title) + '</span>' +
+      '<span class="big-card-desc">' + u.sections.length + ' 节 · ' + nw + ' 个单词</span></span>' +
+      '<span class="prog">' + Math.round(dn * 100 / (nw || 1)) + '%</span></button>';
+  }).join('') + '</div>';
+}
+function openUnit(i) { cur.unit = DATA.units[i]; renderUnit(); }
+function renderUnit() {
+  cur.sec = null; cur.mode = null;
+  const u = cur.unit;
+  setHead(u.title, '选一节开始', true);
+  $('#view').innerHTML = '<div class="card-list">' + u.sections.map((s, i) => {
+    const c = Math.min(secDone(s.id, 'card'), s.words.length),
+          r = Math.min(secDone(s.id, 'recall'), s.words.length),
+          m = Math.min(secDone(s.id, 'make'), s.words.length * MK_PER_WORD);
+    return '<button class="big-card" onclick="openSec(' + i + ')">' +
+      '<span><span class="big-card-title">' + esc(s.title) + '</span>' +
+      '<span class="big-card-desc">' + s.words.length + ' 个单词 · 记忆 ' + c + '/' + s.words.length +
+      ' · 背诵 ' + r + '/' + s.words.length + ' · 造句 ' + m + '/' + (s.words.length * MK_PER_WORD) +
+      '</span></span><span class="arrow">›</span></button>';
+  }).join('') + '</div>';
+}
+function openSec(i) { cur.sec = cur.unit.sections[i]; renderSec(); }
+function renderSec() {
+  cur.mode = null;
+  const s = cur.sec;
+  setHead(s.title, s.words.length + ' 个单词 · 选一种练法', true);
+  $('#view').innerHTML =
+    '<div class="card-list">' +
+    modeCard('card',   '🃏 记忆卡',  '看英文记拼写 → 翻面默写出来', s.words.length) +
+    modeCard('recall', '🧠 背诵',    '只看中文，把英文写出来',       s.words.length) +
+    modeCard('make',   '🖊️ 造句',    '先看 3 个例句，再自己造 3 句', s.words.length * MK_PER_WORD) +
+    '</div>' +
+    '<div class="hint-box" style="margin-top:16px">📋 <b>本节单词表</b>（先扫一眼，心里有底再开练）<br>' +
+    s.words.map(w => esc(w.w) + '　<span style="color:#8a7fa8">' + esc(w.zh) + '</span>').join('<br>') + '</div>';
+}
+function modeCard(mode, title, desc, total) {
+  const d = Math.min(secDone(cur.sec.id, mode), total);
+  return '<button class="big-card" onclick="openMode(\'' + mode + '\')">' +
+    '<span><span class="big-card-title">' + title + '</span>' +
+    '<span class="big-card-desc">' + desc + '</span></span>' +
+    '<span class="prog">' + d + '/' + total + '</span></button>';
+}
+function openMode(m) {
+  cur.mode = m;
+  if (m === 'card') startCard();
+  else if (m === 'recall') startRecall();
+  else startMake();
+}
+
+/* ========== ① 记忆卡：正面英文 → 翻面默写 ========== */
+let cd = { i: 0, flipped: false, ok: 0 };
+function startCard() {
+  cd = { i: 0, flipped: false, ok: 0 };
+  setHead('🃏 记忆卡 · ' + cur.sec.title, '正面记住样子，翻面凭记忆拼出来', true);
+  cardRender();
+}
+function cardRender() {
+  const ws = cur.sec.words;
+  if (cd.i >= ws.length) {
+    setProg(cur.sec.id, 'card', ws.length, ws.length);
+    $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (cd.ok === ws.length ? '🏆' : '🃏') +
+      '</div><div style="font-size:17px;margin-top:8px">这一节 ' + ws.length + ' 个单词过完了，拼对 ' + cd.ok + ' 个</div>' +
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startCard()">再来一轮</button>' +
+      '<button class="btn btn-ghost" onclick="openMode(\'recall\')">去背诵 →</button></div></div>';
+    return;
+  }
+  const w = ws[cd.i];
+  if (!cd.flipped) {
+    $('#view').innerHTML = '<div class="stage">' + pills(cd.i, ws.length) +
+      '<div class="counter">第 ' + (cd.i + 1) + ' / ' + ws.length + ' 个</div>' +
+      '<div class="word-big">' + esc(w.w) + ' <button class="btn-mini" onclick="speak(' + JSON.stringify(w.w) + ')">🔊</button></div>' +
+      '<div class="ipa">' + esc(w.ipa) + '</div>' +
+      '<div class="hint-box">先记住它的样子和读音，翻面要凭记忆把它拼出来。</div>' +
+      '<button class="btn btn-main" onclick="cardFlip()">记住了，翻面 →</button></div>';
+  } else {
+    $('#view').innerHTML = '<div class="stage">' + pills(cd.i, ws.length) +
+      '<div class="counter">第 ' + (cd.i + 1) + ' / ' + ws.length + ' 个</div>' +
+      '<div class="pos-line">' + esc(w.pos) + '</div>' +
+      '<div class="zh-big">' + esc(w.zh) + '</div>' +
+      '<div class="eg">' + esc(maskWord(w.egs[0], w.w)) + '</div>' +
+      '<div style="margin-top:12px"><input class="inp" id="cdIn" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="把这个单词拼出来"></div>' +
+      '<button class="btn btn-main" onclick="cardCheck()">检查</button>' +
+      '<div id="cdFb"></div></div>';
+    const el = $('#cdIn'); if (el) { el.focus(); el.onkeydown = e => { if (e.key === 'Enter') cardCheck(); }; }
+  }
+}
+function maskWord(sent, w) {
+  const re = new RegExp('\\b' + String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'ig');
+  return String(sent).replace(re, '____');
+}
+function cardFlip() { cd.flipped = true; cardRender(); }
+function cardCheck() {
+  const w = cur.sec.words[cd.i], v = ($('#cdIn') || {}).value || '';
+  const ok = normalize(v) === normalize(w.w);
+  if (ok) cd.ok++; else addWrong(w, cur.sec, cur.unit);
+  $('#cdFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
+    (ok ? '🎉 拼对了！' : '💪 正确拼写是 <b>' + esc(w.w) + '</b>　（你写的是「' + esc(v || '（空）') + '」）<br>这个词已经放进错题本，等下可以再练一次。') +
+    '</div><button class="btn btn-main" onclick="cardNext()">下一个 →</button>';
+  setProg(cur.sec.id, 'card', cd.i + 1, cur.sec.words.length);
+}
+function cardNext() { cd.i++; cd.flipped = false; cardRender(); }
+function pills(i, n) {
+  let h = '<div class="pills">';
+  for (let k = 0; k < n; k++) h += '<span class="pill ' + (k === i ? 'now' : (k < i ? 'ok' : '')) + '"></span>';
+  return h + '</div>';
+}
+
+/* ========== ② 背诵：只看中文写英文 ==========
+   ⚠️ 页首不能出现英文：节标题「Lesson 1-2　Excuse me!」里的课名本身就是答案
+   （背 excuse 时抬头就看到 Excuse me），所以这一关只用「Lesson X-Y」这段。 */
+function shortTitle(t) { return String(t).split('\u3000')[0].trim(); }
+
+let rc = { i: 0, ok: 0 };
+function startRecall() {
+  rc = { i: 0, ok: 0 };
+  setHead('🧠 背诵 · ' + shortTitle(cur.sec.title), '只看中文，把英文写出来', true);
+  recallRender();
+}
+function recallRender() {
+  const ws = cur.sec.words;
+  if (rc.i >= ws.length) {
+    setProg(cur.sec.id, 'recall', ws.length, ws.length);
+    $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (rc.ok === ws.length ? '🏆' : '🧠') +
+      '</div><div style="font-size:17px;margin-top:8px">背完 ' + ws.length + ' 个，写对 ' + rc.ok + ' 个</div>' +
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startRecall()">再来一轮</button>' +
+      '<button class="btn btn-ghost" onclick="openMode(\'make\')">去造句 →</button></div></div>';
+    return;
+  }
+  const w = ws[rc.i];
+  $('#view').innerHTML = '<div class="stage">' + pills(rc.i, ws.length) +
+    '<div class="counter">第 ' + (rc.i + 1) + ' / ' + ws.length + ' 个</div>' +
+    '<div class="pos-line">' + esc(w.pos) + '</div>' +
+    '<div class="zh-big">' + esc(maskWord(w.zh, w.w)) + '</div>' +
+    '<div style="margin-top:14px"><input class="inp" id="rcIn" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="写出对应的英文单词"></div>' +
+    '<button class="btn btn-main" onclick="recallCheck()">检查</button>' +
+    '<button class="btn btn-ghost" onclick="recallHint()">给点提示</button>' +
+    '<div id="rcFb"></div></div>';
+  const el = $('#rcIn'); if (el) { el.focus(); el.onkeydown = e => { if (e.key === 'Enter') recallCheck(); }; }
+}
+function recallHint() {
+  const w = cur.sec.words[rc.i];
+  const head = w.w.slice(0, Math.max(1, Math.ceil(w.w.length / 3)));
+  $('#rcFb').innerHTML = '<div class="fb tip">💡 开头是 <b>' + esc(head) + '</b>…，一共 ' + w.w.replace(/\s/g, '').length +
+    ' 个字母<br>例句：' + esc(maskWord(w.egs[0], w.w)) + '</div>';
+}
+function recallCheck() {
+  const w = cur.sec.words[rc.i], v = ($('#rcIn') || {}).value || '';
+  const ok = normalize(v) === normalize(w.w);
+  if (ok) rc.ok++; else addWrong(w, cur.sec, cur.unit);
+  $('#rcFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
+    (ok ? '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
+        : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>（你写的是「' + esc(v || '（空）') + '」）<br>' +
+          '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>') +
+    '</div><button class="btn btn-main" onclick="recallNext()">下一个 →</button>';
+  setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length);
+}
+function recallNext() { rc.i++; recallRender(); }
+
+/* ========== ③ 造句：先看 3 例句，再自己造 3 句 ========== */
+let mk = { i: 0, j: 0, sents: [], ok: 0 };
+function startMake() {
+  mk = { i: 0, j: 0, sents: [], ok: 0 };
+  setHead('🖊️ 造句 · ' + cur.sec.title, '每个词造 3 句不一样的话，每句至少 5 个单词', true);
+  makeRender();
+}
+function makeRender() {
+  const ws = cur.sec.words, total = ws.length * MK_PER_WORD;
+  if (mk.i >= ws.length) {
+    setProg(cur.sec.id, 'make', total, total);
+    $('#view').innerHTML = '<div class="stage done-big"><div class="done-emoji">' + (mk.ok === total ? '🏆' : '🖊️') +
+      '</div><div style="font-size:17px;margin-top:8px">' + ws.length + ' 个词、每个 3 句，一共造了 ' + mk.ok + ' / ' + total + ' 句</div>' +
+      '<div style="margin-top:14px"><button class="btn btn-main" onclick="startMake()">再来一轮</button></div></div>';
+    return;
+  }
+  const w = ws[mk.i], mine = (mk.sents[mk.i] || []).filter(Boolean);
+  $('#view').innerHTML = '<div class="stage">' +
+    '<div class="counter">第 ' + (mk.i + 1) + ' / ' + ws.length + ' 个词　·　第 ' + (mk.j + 1) + ' / ' + MK_PER_WORD + ' 句</div>' +
+    '<div class="word-big" style="font-size:24px">' + esc(w.w) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(w.w) + ')">🔊</button></div>' +
+    '<div class="pos-line" style="margin-top:4px">' + esc(w.pos) + '　' + esc(w.zh) + '</div>' +
+    '<div style="margin-top:12px;font-weight:600;font-size:14px">📖 先看看别人怎么用</div>' +
+    w.egs.map((e, k) => '<div class="eg">' + (k + 1) + '. ' + esc(e) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(e) + ')">🔊</button></div>').join('') +
+    (mine.length ? '<div style="margin-top:12px;font-weight:600;font-size:14px">✍️ 你已经造的</div>' +
+      mine.map((s, k) => '<div class="mine">' + (k + 1) + '. ' + esc(s) + '</div>').join('') : '') +
+    '<div class="hint-box">✏️ 这句要<b>至少 5 个单词</b>、要用上「<b>' + esc(w.w) + '</b>」，而且<b>不能和自己前面那几句重复</b>。</div>' +
+    '<textarea class="inp" id="mkIn" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="用这个词造第 ' + (mk.j + 1) + ' 句你自己的话…"></textarea>' +
+    '<button class="btn btn-main" onclick="makeCheck()">✨ 检查我的句子</button>' +
+    (mk.i + mk.j > 0 ? '<button class="btn btn-ghost" onclick="makePrev()">← 上一句</button>' : '') +
+    '<div id="mkFb"></div></div>';
+}
+function makeCheck() {
+  const w = cur.sec.words[mk.i], s = (($('#mkIn') || {}).value || '').trim();
+  const bad = h => { $('#mkFb').innerHTML = '<div class="fb bad">' + h + '</div>'; };
+  if (!s) { bad('先写一句话再检查 🙂'); return; }
+  const nw = wordCount(s);
+  if (nw < MK_MIN_WORDS) {
+    bad('句子要有<b>至少 ' + MK_MIN_WORDS + ' 个单词</b>，现在只有 ' + nw + ' 个。<br>' +
+        '试试加上「什么时候」「在哪里」「和谁」，句子就长了：<br>' +
+        '<span style="font-size:13px">例：I read. → I read a book <b>at home every evening</b>.</span>'); return;
+  }
+  if (!hasWord(s, w.w)) {
+    bad('这句话里没有用上「<b>' + esc(w.w) + '</b>」，这一关就是要练这个词。<br>' +
+        '<span style="font-size:13px">（复数 ' + esc(w.w) + 's、过去式、加 ing 这些变形都算数）</span>'); return;
+  }
+  const prev = (mk.sents[mk.i] || []).filter((x, k) => x && k !== mk.j);
+  const dup = prev.find(p => tooSimilar(p, s));
+  if (dup) {
+    bad('这句和你前面造的「' + esc(dup) + '」太像了。<br>换个<b>角度</b>再想一句：换人（I→My brother）、换时间（今天→昨天）、换地方，或改成问句/否定句 💡'); return;
+  }
+  /* 到这里三道硬检查都过了 → 给逐项核对清单（孩子没有判断能力，不能只问「你觉得对吗」） */
+  const capOK = /^[A-Z]/.test(s), endOK = /[.!?]$/.test(s), vbOK = hasVerb(s);
+  const row = (o, t, f) => '<li>' + (o ? '✅ ' : '⚠️ ') + t + (o ? '' :
+    '<br><span style="color:#c0392b;font-size:13px">→ ' + f + '</span>') + '</li>';
+  $('#mkFb').innerHTML = '<div class="fb tip">🔍 <b>照着这张表核对你的句子</b><div class="eg" style="margin:8px 0">' + esc(s) + '</div>' +
+    '<ul class="chk">' +
+      row(capOK, '第一个字母大写了吗？', '英文句子开头要大写') +
+      row(endOK, '句子末尾有标点吗？', '陈述句结尾加句号 <b>.</b>，问句用 <b>?</b>') +
+      row(vbOK, '句子里有动词吗？', '每句英文都要有动词（am/is/are，或 like/have/go 这类动作词）') +
+      '<li>🔤 再看动词形式：主语是 he/she/it 时动作词要加 <b>s</b>（He <b>likes</b>）；说过去的事用过去式（I <b>went</b>）。</li>' +
+    '</ul>' +
+    '<div style="margin-top:8px;font-size:13.5px">📖 和上面 3 个例句比一比，结构像不像？</div></div>' +
+    '<button class="btn btn-main" onclick="makePass(true)">✅ 都核对过，没问题</button>' +
+    '<button class="btn btn-ghost" onclick="makePass(false)">🙋 有不确定的，先记下来</button>';
+  window.__mkS = s;
+}
+function makePass(ok) {
+  const w = cur.sec.words[mk.i], s = window.__mkS || '';
+  (mk.sents[mk.i] = mk.sents[mk.i] || [])[mk.j] = s;
+  if (ok) mk.ok++; else addWrong(w, cur.sec, cur.unit);
+  const total = cur.sec.words.length * MK_PER_WORD;
+  const doneN = mk.i * MK_PER_WORD + mk.j + 1;
+  setProg(cur.sec.id, 'make', doneN, total);
+  const last = (mk.i === cur.sec.words.length - 1) && (mk.j === MK_PER_WORD - 1);
+  $('#mkFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'tip') + '">' +
+    (ok ? '🎉 记下这一句了！' : '记进错题本了，复习时再练这个词 💪') + '</div>' +
+    '<button class="btn btn-main" onclick="makeNext()">' +
+    (mk.j < MK_PER_WORD - 1 ? '再造第 ' + (mk.j + 2) + ' 句 →' : (last ? '完成 →' : '下一个词 →')) + '</button>';
+}
+function makeNext() { if (mk.j < MK_PER_WORD - 1) mk.j++; else { mk.j = 0; mk.i++; } makeRender(); }
+function makePrev() { if (mk.j > 0) mk.j--; else if (mk.i > 0) { mk.i--; mk.j = MK_PER_WORD - 1; } makeRender(); }
+
+renderHome();
+</script>
+<script src="assets/sync.js"></script>
+</body>
+</html>

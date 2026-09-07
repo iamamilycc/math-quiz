@@ -80,7 +80,7 @@ h1 { font-size: 20px; margin: 6px 0 4px; }
 
 <script>
 const KEY = 'mathquiz_wrongbook_v1';
-const SUBJECT_LABEL = { math: '🔢 数学', geo: '🌍 地理', bio: '🧬 生物', eng: '📕 英语' };
+const SUBJECT_LABEL = { math: '🔢 数学', geo: '🌍 地理', bio: '🧬 生物', eng: '📕 英语', engword: '🔤 英语单词' };
 let sortByCount = false;
 
 function loadBook() {
@@ -109,7 +109,7 @@ function render() {
         bySubject[item.subject].push(item);
     });
 
-    ['math', 'geo', 'bio', 'eng'].forEach(subject => {
+    ['math', 'geo', 'bio', 'eng', 'engword'].forEach(subject => {
         const items = bySubject[subject];
         if (!items || !items.length) return;
 
@@ -183,7 +183,7 @@ document.getElementById('copy-btn').onclick = () => {
     const book = loadBook();
     if (!book.length) { showToast('还没有错题可复制'); return; }
     let text = '【错题清单】\n';
-    ['math', 'geo', 'bio', 'eng'].forEach(subject => {
+    ['math', 'geo', 'bio', 'eng', 'engword'].forEach(subject => {
         const items = book.filter(b => b.subject === subject);
         if (!items.length) return;
         text += `\n== ${SUBJECT_LABEL[subject] || subject} ==\n`;
