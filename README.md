@@ -13,7 +13,7 @@
 | `geo.html` | 地理 湘教版七上 | 手写 |
 | `bio.html` | 生物 人教版七上 | 手写 |
 | `eng.html` | 新概念第一册 · 考点测验（7 章 506 题） | `build/eng_data.py` + `build/eng_c2..c7.py` |
-| `words.html` | 新概念第一册 · 单词（记忆 / 背诵 / 造句） | `build/words_data.py` + `build/words_u*.py` |
+| `words.html` | 新概念第一册 · 单词 6 单元 32 节 601 词（记忆 / 背诵 / 造句） | `build/words_data.py` + `build/words_u1..u6.py` |
 | `wrongbook.html` | 各科错题本（localStorage） | — |
 
 ## 改内容怎么改
