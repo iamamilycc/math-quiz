@@ -114,14 +114,26 @@ function speak(t) {
 
 /* ========== 造句检查（不依赖任何 AI；规则与精读站一致） ========== */
 const MK_PER_WORD = 3, MK_MIN_WORDS = 5;
+/* 孩子写 caught 来练 catch、写 tallest 来练 tall，都该算「用上了这个词」。
+   规则和 build_words.py 的 _has_word 保持一致（两边不一致会出现
+   「建置说合格、孩子写同样的形式却被判没用上」这种最难查的问题）。 */
 function hasWord(s, w) {
   const base = normSent(w); if (!base) return true;
   const S = ' ' + normSent(s) + ' ';
   if (base.indexOf(' ') >= 0) return S.indexOf(' ' + base + ' ') >= 0;
-  const stem = base.replace(/[ey]$/, '');
-  const forms = [base, base+'s', base+'es', base+'d', base+'ed', base+'ing',
-                 stem+'ing', stem+'ed', stem+'ies', stem+'ied'];
-  return forms.some(f => S.indexOf(' ' + f + ' ') >= 0);
+  const se = base.replace(/e$/, ''), sy = base.replace(/y$/, ''), dbl = base + base.slice(-1);
+  const forms = [base, base+'s', base+'es', base+'d', base+'ed', base+'ing', base+'er', base+'est',
+                 se+'ing', se+'ed', se+'er', se+'est', sy+'ies', sy+'ied', sy+'ier', sy+'iest',
+                 dbl+'er', dbl+'est', dbl+'ing', dbl+'ed'];
+  /* 不规则形：直接查动词表（VERB_FORMS 里已经有三单和过去式） */
+  if (typeof VERB_FORMS !== 'undefined' && VERB_FORMS[base]) forms.push.apply(forms, VERB_FORMS[base]);
+  const IRR = { catch:['caught'], go:['went','gone'], see:['saw','seen'], be:['am','is','are','was','were','been'],
+                buy:['bought'], bring:['brought'], think:['thought'], teach:['taught'], take:['took','taken'],
+                give:['gave','given'], eat:['ate','eaten'], write:['wrote','written'], wear:['wore','worn'],
+                speak:['spoke','spoken'], sing:['sang','sung'], swim:['swam','swum'], fly:['flew','flown'],
+                drive:['drove','driven'], fall:['fell','fallen'], ring:['rang','rung'] };
+  if (IRR[base]) forms.push.apply(forms, IRR[base]);
+  return forms.some(f => f && S.indexOf(' ' + f + ' ') >= 0);
 }
 function tooSimilar(a, b) {
   const A = normSent(a), B = normSent(b);
@@ -174,7 +186,16 @@ const VERB_FORMS = {
   fall:['falls','fell'], hear:['hears','heard'], hold:['holds','held'], lose:['loses','lost'],
   pay:['pays','paid'], send:['sends','sent'], sing:['sings','sang'], win:['wins','won'],
   miss:['misses','missed'], visit:['visits','visited'], wake:['wakes','woke'], wish:['wishes','wished'],
-  belong:['belongs','belonged'], draw2:['',''], excuse:['excuses','excused'], pardon:['pardons','pardoned']
+  belong:['belongs','belonged'], excuse:['excuses','excused'], pardon:['pardons','pardoned'],
+  spend:['spends','spent'], sound:['sounds','sounded'], move:['moves','moved'], grow:['grows','grew'],
+  become:['becomes','became'], begin:['begins','began'], build:['builds','built'], catch:['catches','caught'],
+  choose:['chooses','chose'], cost:['costs','cost'], fly:['flies','flew'], forget:['forgets','forgot'],
+  happen:['happens','happened'], hope:['hopes','hoped'], laugh:['laughs','laughed'], learn:['learns','learnt'],
+  mean:['means','meant'], remember:['remembers','remembered'], ride:['rides','rode'], run2:['',''],
+  seem:['seems','seemed'], sell:['sells','sold'], sing2:['',''], smile:['smiles','smiled'],
+  stay:['stays','stayed'], teach2:['',''], think2:['',''], travel:['travels','travelled'],
+  try:['tries','tried'], turn:['turns','turned'], understand:['understands','understood'],
+  use:['uses','used'], wash2:['',''], worry:['worries','worried'], write2:['','']
 };
 const BASE_VERBS = new Set(Object.keys(VERB_FORMS));
 const THIRD_TO_BASE = {}; const PAST_TO_BASE = {};
@@ -329,8 +350,13 @@ function checkGrammar(sent) {
         nx && ['never','nothing','nobody','none'].includes(nx))
       add('error', '英语不能用双重否定', '把 <b>' + w + '</b> 去掉，只留 <b>' + nx + '</b>（它本身就是否定）');
 
-    /* R10 very 不能直接修饰动词 */
-    if (w === 'very' && nx && (BASE_VERBS.has(nx) || THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
+    /* R10 very 不能直接修饰动词
+       ⚠️ clean / open / free / warm 这些既是动词也是形容词，「very clean」完全正确，
+          所以这些词一律不报——把对的判成错比漏掉一个错更伤。 */
+    const ALSO_ADJ = new Set(['clean','open','close','free','warm','cool','slow','right','light',
+                              'empty','dry','quiet','still','well','fine','short','long','fast','hard']);
+    if (w === 'very' && nx && !ALSO_ADJ.has(nx) &&
+        (BASE_VERBS.has(nx) || THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
       add('error', 'very 不能直接放在动词前面',
           '改成把 <b>very much</b> 放到句子后面：I <b>' + nx + '</b> it <b>very much</b>.');
 
@@ -363,10 +389,44 @@ function checkGrammar(sent) {
       add('warn', '<b>to</b> 后面通常跟动词原形', 'to 是不定式符号，后面用原形：to <b>' + nx.replace(/ing$/, '') + '</b>');
   }
 
-  /* R14 整句没有动词 */
-  const hasVerbTok = t.some(x => BE_ALL.has(x) || MODALS.has(x) || AUX_DO.has(x) ||
-    BASE_VERBS.has(x) || THIRD_TO_BASE[x] || PAST_TO_BASE[x] || /(ed|ing)$/.test(x));
-  if (!hasVerbTok) add('error', '这句话里好像没有动词', '每句英文都要有动词：是 am/is/are，或 like/have/go 这类动作词');
+  /* R14 缺 be 动词：只在把握很大的句型下报——「主语代词 + 限定词 + 名词」中间没有动词
+     （I a student. / My father a doctor.）。
+     ⚠️ 不能用「整句找不到动词就报」这种写法：动词表不可能穷尽，
+        I share a room with my sister. 会被误判成没有动词。 */
+  const DET = new Set(['a','an','the','my','your','his','her','its','our','their','this','that','one','two','three']);
+  const isVerbTok = x => BE_ALL.has(x) || MODALS.has(x) || AUX_DO.has(x) ||
+    BASE_VERBS.has(x) || THIRD_TO_BASE[x] || PAST_TO_BASE[x];
+  /* 判「整句有没有动词」时放得更宽：连 cannot / can't 这类合写否定和 ed/ing/s 结尾都算 */
+  const isVerbTok0 = x => isVerbTok(x) ||
+    /^(cannot|can't|won't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|shouldn't|couldn't|mustn't)$/.test(x) ||
+    (x.length > 3 && /(ed|ing)$/.test(x));   /* 不能把 s 结尾也算——this / his / bus 都会被误当成动词 */
+  /* ⚠️ 只有「整句一个动词都找不到」时才可能是漏了 be。
+     两个反例都是实测撞出来的：
+       Is this your handbag?              be 在句首（疑问句）
+       He cannot find his tie this morning. 动词是 find，cannot 也不在情态词表里
+     所以保险条件要放到最宽：句中出现任何动词形式，这条规则就不启动。 */
+  const hasAnyVerb = t.some(x => isVerbTok0(x));
+  for (let i = 0; !hasAnyVerb && i < t.length - 2; i++) {
+    const subjOK = SUBJ_I.has(t[i]) || SUBJ_3S.has(t[i]) || SUBJ_PL.has(t[i]) ||
+                   (DET.has(t[i]) && t[i + 1] && !isVerbTok(t[i + 1]));
+    if (!subjOK) continue;
+    /* 从主语后往后看两个词：都不是动词，而且出现了「限定词 + 名词」→ 多半漏了 be */
+    const a = t[i + 1], b = t[i + 2];
+    if (a && b && DET.has(a) && !isVerbTok(a) && !isVerbTok(b) && !pf[i] && !pf[i + 1]) {
+      add('error', '「' + t[i] + ' ' + a + ' ' + b + '」中间少了 be 动词',
+          '英语句子一定要有动词，这里要补上 <b>am / is / are</b>：' +
+          t[i] + ' <b>' + (SUBJ_I.has(t[i]) ? 'am' : (SUBJ_PL.has(t[i]) ? 'are' : 'is')) + '</b> ' + a + ' ' + b);
+      break;
+    }
+    /* 另一种常见写法：「我的爸爸 一个医生」——限定词+名词 后面又跟 限定词+名词，中间没动词
+       （My father a doctor.）*/
+    if (DET.has(t[i]) && a && b && t[i + 3] && !isVerbTok(a) && DET.has(b) && !isVerbTok(t[i + 3]) &&
+        !pf[i] && !pf[i + 1] && !pf[i + 2]) {
+      add('error', '「' + a + ' ' + b + ' ' + t[i + 3] + '」中间少了 be 动词',
+          '英语句子一定要有动词，这里要补上 <b>is</b>：' + t[i] + ' ' + a + ' <b>is</b> ' + b + ' ' + t[i + 3]);
+      break;
+    }
+  }
 
   /* 去重（同一条只报一次） */
   const seen = new Set();

@@ -35,6 +35,11 @@ const ERR = [
   ['Although he is old, but he is strong.', 'although+but'],
   ['The the book is on my desk.',        '重复词'],
   ['excuse me can you help me',          '大小写+标点'],
+  // 缺 be 动词（这一条的保险条件调过好几轮，边界全锁在下面 OK 列表里）
+  ['My father a doctor.',                '缺 be'],
+  ['I a student in this school.',        '缺 be'],
+  ['He my best friend here.',            '缺 be'],
+  ['Her mother a nurse here.',           '缺 be'],
 ];
 const OK = [
   'Excuse me, where is your book?', 'Is this your handbag?', 'This is my handbag on the table.',
@@ -58,6 +63,18 @@ const OK = [
   'She is the daughter of a famous doctor.', 'I write my homework with a pen.',
   'He washed his dirty shirt this morning.', 'Thank you very much, that was really kind.',
   'Mr. Green has one son and two daughters.', 'My little brother is only five years old.',
+  // ↓ 以下每一条都是实测撞出来的误报，修完锁在这里防回退
+  'He cannot find his tie this morning.',      // 动词是 find，cannot 不在情态词表里
+  'Is this your handbag?',                     // be 在句首（疑问句）
+  'I share a room with my sister.',            // share 不在动词表里，但不能因此判「缺 be」
+  'American English sounds a little different.',// sounds 曾被判成「没有动词」
+  'We spent two weeks in Italy.',              // spent 同上
+  'The kitchen looks very clean today.',       // very clean 是对的（clean 也是形容词）
+  'The bus stopped in front of us.',
+  'He likes this excuse very much.',           // this 是限定词不是主语，excuse 是名词
+  'Is this your coat or her coat?',            // her 本身就是物主代词
+  'The cat caught a mouse last night.',        // caught 是 catch 的变形
+  'He is the tallest boy in our class.',       // tallest 是 tall 的变形
 ];
 
 let fails = 0;

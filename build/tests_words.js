@@ -14,13 +14,15 @@ console.log(`     单元 ${DATA.units.length} / 节 ${DATA.units.reduce((a,u)=>a
 
 // --- 例句规则（和建置校验同一套，双保险）---
 const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
-function hasWord(s, w) {
-  const base = norm(w), S = ' ' + norm(s) + ' ';
-  if (base.indexOf(' ') >= 0) return S.indexOf(' ' + base + ' ') >= 0;
-  const stem = base.replace(/[ey]$/, '');
-  return [base,base+'s',base+'es',base+'d',base+'ed',base+'ing',stem+'ing',stem+'ed',stem+'ies',stem+'ied']
-    .some(f => S.indexOf(' ' + f + ' ') >= 0);
-}
+/* ⚠️ 不要在这里再写一份 hasWord——同一条规则写三份，迟早判不一致。
+   直接把页面里那份抽出来用，测的就是孩子真正会碰到的那份逻辑。 */
+const hasWord = (() => {
+  const mv = src.match(/const VERB_FORMS = \{[\s\S]*?\n\};/);
+  const mn = src.match(/function normSent\(s\) \{[\s\S]*?\n\}/);
+  const mh = src.match(/function hasWord\(s, w\) \{[\s\S]*?\n\}/);
+  if (!mv || !mn || !mh) { console.log('  ❌ 抽不出页面里的 hasWord'); process.exit(1); }
+  return new Function(mv[0] + '\n' + mn[0] + '\n' + mh[0] + '\nreturn hasWord;')();
+})();
 function tooSimilar(a, b) {
   const A = norm(a), B = norm(b);
   if (A === B) return true;

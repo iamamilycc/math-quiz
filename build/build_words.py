@@ -24,16 +24,42 @@ def _norm(t):
     return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9\s]', ' ', str(t).lower())).strip()
 
 
+# 常见不规则变形：孩子写 caught 来练 catch 是对的，不能判成「没用上这个词」
+IRREGULAR = {
+    'catch': ['caught'], 'buy': ['bought'], 'bring': ['brought'], 'think': ['thought'],
+    'teach': ['taught'], 'go': ['went', 'gone'], 'see': ['saw', 'seen'], 'do': ['did', 'done'],
+    'have': ['had'], 'make': ['made'], 'take': ['took', 'taken'], 'give': ['gave', 'given'],
+    'come': ['came'], 'get': ['got'], 'eat': ['ate', 'eaten'], 'drink': ['drank', 'drunk'],
+    'write': ['wrote', 'written'], 'read': ['read'], 'run': ['ran'], 'sit': ['sat'],
+    'stand': ['stood'], 'meet': ['met'], 'leave': ['left'], 'lose': ['lost'], 'find': ['found'],
+    'feel': ['felt'], 'keep': ['kept'], 'sleep': ['slept'], 'speak': ['spoke', 'spoken'],
+    'wear': ['wore', 'worn'], 'sing': ['sang', 'sung'], 'swim': ['swam', 'swum'],
+    'be': ['am', 'is', 'are', 'was', 'were', 'been'], 'say': ['said'], 'tell': ['told'],
+    'pay': ['paid'], 'send': ['sent'], 'spend': ['spent'], 'hear': ['heard'], 'hold': ['held'],
+    'fly': ['flew', 'flown'], 'drive': ['drove', 'driven'], 'fall': ['fell', 'fallen'],
+    'ring': ['rang', 'rung'], 'win': ['won'], 'cut': ['cut'], 'put': ['put'], 'let': ['let'],
+    'learn': ['learnt', 'learned'], 'lend': ['lent'], 'understand': ['understood'],
+}
+
+
 def _has_word(sent, w):
+    """例句/造句里有没有真的用上这个词——容许常见变形：
+       复数、三单、过去式、ing、比较级最高级（tall→taller/tallest）、不规则动词（catch→caught）"""
     base = _norm(w)
     if not base:
         return True
     S = ' ' + _norm(sent) + ' '
     if ' ' in base:
         return (' ' + base + ' ') in S
-    stem = re.sub(r'[ey]$', '', base)
+    stem_e = re.sub(r'e$', '', base)          # like → lik(ing)
+    stem_y = re.sub(r'y$', '', base)          # happy → happ(ier)
     forms = {base, base+'s', base+'es', base+'d', base+'ed', base+'ing',
-             stem+'ing', stem+'ed', stem+'ies', stem+'ied'}
+             base+'er', base+'est',                       # 比较级/最高级
+             stem_e+'ing', stem_e+'ed', stem_e+'er', stem_e+'est',
+             stem_y+'ies', stem_y+'ied', stem_y+'ier', stem_y+'iest',
+             base+base[-1]+'er', base+base[-1]+'est',      # big → bigger/biggest
+             base+base[-1]+'ing', base+base[-1]+'ed'}      # stop → stopping/stopped
+    forms.update(IRREGULAR.get(base, []))
     return any((' ' + f + ' ') in S for f in forms)
 
 
