@@ -19,8 +19,8 @@
 
 UNITS = []
 
-import words_u1, words_u2
-for _m in (words_u1, words_u2):
+import words_u1, words_u2, words_u3
+for _m in (words_u1, words_u2, words_u3):
     UNITS.append(_m.CHAPTER)
 
 DATA = {"units": UNITS}

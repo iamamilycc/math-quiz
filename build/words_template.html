@@ -451,7 +451,10 @@ function checkGrammar(sent) {
     const nx3 = t[i + 3];
     /* ⚠️ 并列主语是复数：My uncle and his wife live here. 里的 live 是对的 */
     const compound = t.slice(0, i + 2).includes('and');
-    if (!governed && !pastCtx && !compound && DET.has(w) && nx && nx2 &&
+    /* ⚠️ 前面已经有 be 动词，这个名词短语就不是后面那个词的主语：
+       What is the weather like today? 里 like 是介词不是动词。 */
+    const beBefore = t.slice(0, i).some(x => BE_ALL.has(x));
+    if (!governed && !pastCtx && !compound && !beBefore && DET.has(w) && nx && nx2 &&
         PURE_NOUNS.has(nx) && !/s$/.test(nx) && !IRREG_PLURAL.has(nx) && !SINGULAR_S.has(nx) &&
         BASE_VERBS.has(nx2) && !SAME_BASE_PAST.has(nx2) && !ALSO_ADJ.has(nx2) &&
         !BE_ALL.has(nx2) && !MODALS.has(nx2) && !AUX_DO.has(nx2) &&
