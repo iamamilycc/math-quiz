@@ -64,7 +64,10 @@ ok(/setHead\('🧠 背诵 · ' \+ shortTitle\(/.test(src), '背诵确实调用�
 ok(/MK_MIN_WORDS\s*=\s*5/.test(src), '造句内建下限是 5 个单词');
 ok(/MK_PER_WORD\s*=\s*3/.test(src), '每个词要造 3 句');
 ok(src.includes('hasWord(') && src.includes('tooSimilar('), '造句检查含「用上该词」与「不得重复」');
-ok(src.includes('照着这张表核对'), '造句无法自动判语法时给的是核对清单，不是「你觉得对吗」');
+ok(src.includes('function checkGrammar('), '造句有真正的语法检查器（孩子没有判断能力，必须系统判对错）');
+ok(/const issues = checkGrammar\(s\)/.test(src), '检查器已接进造句判分流程');
+ok(src.includes('检查通过') && src.includes('个地方要改'), '判分会给明确结论（通过 / 哪几处要改）');
+ok(!src.includes('都核对过，没问题') && !src.includes('你觉得'), '不再有「你自己判断对不对」式的自评');
 ok(src.includes("subject: 'engword'"), '错题本科目标识为 engword');
 ok(!/subject:\s*'(math|geo|bio)'/.test(src), '没有残留其他科目标识');
 

@@ -1,0 +1,4 @@
+# 生成与体检脚本只用 Python 标准库，无需安装任何包。
+# 只有真点击走查 build/tests_click.py 需要 playwright：
+#   pip3 install playwright && python3 -m playwright install chromium
+playwright>=1.40 ; extra == "test"

@@ -145,6 +145,234 @@ function hasVerb(s) {
   return t.some(x => x.length > 3 && /(ed|ing|s)$/.test(x));
 }
 
+/* ========== 英语句子语法检查器（规则式，不依赖 AI）==========
+   ⭐ 为什么要有它：孩子没有判断能力。只给一张「你自己核对」的清单，等于没判分。
+   这里针对新概念第一册程度的高频错误做确定性检查，每条都给「错在哪 + 怎么改」。
+   原则：宁可漏报，不可误报——把对的句子判成错，比漏掉一个错更伤（孩子会把对的当错的记）。
+   所以只在非常确定时才报 error，拿不准的用 warn（提醒但不算错）。 */
+
+/* 动词表：base → 第三人称单数 / 过去式。用于查主谓一致与时态标记。 */
+const VERB_FORMS = {
+  be:['is','was'], have:['has','had'], do:['does','did'], go:['goes','went'], come:['comes','came'],
+  get:['gets','got'], make:['makes','made'], take:['takes','took'], see:['sees','saw'], look:['looks','looked'],
+  like:['likes','liked'], want:['wants','wanted'], eat:['eats','ate'], drink:['drinks','drank'],
+  read:['reads','read'], write:['writes','wrote'], play:['plays','played'], run:['runs','ran'],
+  sit:['sits','sat'], stand:['stands','stood'], open:['opens','opened'], close:['closes','closed'],
+  buy:['buys','bought'], give:['gives','gave'], put:['puts','put'], say:['says','said'],
+  tell:['tells','told'], think:['thinks','thought'], know:['knows','knew'], live:['lives','lived'],
+  work:['works','worked'], study:['studies','studied'], help:['helps','helped'], feel:['feels','felt'],
+  find:['finds','found'], start:['starts','started'], stop:['stops','stopped'], wear:['wears','wore'],
+  watch:['watches','watched'], listen:['listens','listened'], speak:['speaks','spoke'],
+  walk:['walks','walked'], sleep:['sleeps','slept'], swim:['swims','swam'], ring:['rings','rang'],
+  arrive:['arrives','arrived'], repeat:['repeats','repeated'], thank:['thanks','thanked'],
+  show:['shows','showed'], bring:['brings','brought'], wash:['washes','washed'], draw:['draws','drew'],
+  borrow:['borrows','borrowed'], lend:['lends','lent'], meet:['meets','met'], leave:['leaves','left'],
+  need:['needs','needed'], learn:['learns','learned'], teach:['teaches','taught'], call:['calls','called'],
+  ask:['asks','asked'], answer:['answers','answered'], love:['loves','loved'], enjoy:['enjoys','enjoyed'],
+  wait:['waits','waited'], move:['moves','moved'], keep:['keeps','kept'], carry:['carries','carried'],
+  clean:['cleans','cleaned'], cook:['cooks','cooked'], cut:['cuts','cut'], drive:['drives','drove'],
+  fall:['falls','fell'], hear:['hears','heard'], hold:['holds','held'], lose:['loses','lost'],
+  pay:['pays','paid'], send:['sends','sent'], sing:['sings','sang'], win:['wins','won'],
+  miss:['misses','missed'], visit:['visits','visited'], wake:['wakes','woke'], wish:['wishes','wished'],
+  belong:['belongs','belonged'], draw2:['',''], excuse:['excuses','excused'], pardon:['pardons','pardoned']
+};
+const BASE_VERBS = new Set(Object.keys(VERB_FORMS));
+const THIRD_TO_BASE = {}; const PAST_TO_BASE = {};
+for (const b in VERB_FORMS) {
+  if (VERB_FORMS[b][0]) THIRD_TO_BASE[VERB_FORMS[b][0]] = b;
+  if (VERB_FORMS[b][1]) PAST_TO_BASE[VERB_FORMS[b][1]] = b;
+}
+const BE_ALL = new Set(['am','is','are','was','were','be','been','being']);
+const MODALS = new Set(['can','could','will','would','shall','should','may','might','must']);
+const AUX_DO = new Set(['do','does','did',"don't",'dont',"doesn't",'doesnt',"didn't",'didnt']);
+/* 原形和过去式同形的动词：看到 She put… 无法判断是「漏了 s」还是「过去式」，
+   一律不报错——宁可漏报，不可把对的判成错。 */
+const SAME_BASE_PAST = new Set(['put','cut','read','let','cost','hurt','shut','set','hit','spread']);
+/* 句子里出现这些词 → 多半在讲过去的事，三单加 s 的规则就不适用了 */
+const PAST_MARKERS = new Set(['yesterday','ago','last','then','just','once','before']);
+/* 主语判定 */
+const SUBJ_I = new Set(['i']);
+const SUBJ_3S = new Set(['he','she','it','this','that','someone','somebody','everyone','everybody','nobody','nothing']);
+/* ⚠️ 判「三单漏 s」时不能把 this / that 当主语——它们更常是限定词：
+   「He likes this excuse very much.」里 this 修饰名词 excuse，不是「this 做主语 + excuse 做动词」。
+   （这是真点击走查抓出来的误报；把对的句子判成错比漏掉一个错更伤。）*/
+const SUBJ_3S_FOR_VERB = new Set(['he','she','it','someone','somebody','everyone','everybody','nobody']);
+const SUBJ_PL = new Set(['we','they','you','these','those','people']);
+/* 元音音素开头（用 an）与例外 */
+const AN_EXCEPT_A = new Set(['university','uniform','user','european','one','once','useful','usual']); // 读音以辅音开头 → 用 a
+const A_EXCEPT_AN = new Set(['hour','honest','honour','honor','heir']);                                 // h 不发音 → 用 an
+
+/* 从本册词表里抽出「确定是名词、且不会当动词用」的词——用来判断
+   「you book」这类中文直译错误（应该是 your book）。用自己的数据判，不靠猜。 */
+const PURE_NOUNS = (() => {
+  const set = new Set();
+  try {
+    DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+      const k = String(w.w).toLowerCase();
+      if (String(w.pos).includes('名词') && k.indexOf(' ') < 0 && !BASE_VERBS.has(k) &&
+          !THIRD_TO_BASE[k] && !PAST_TO_BASE[k]) set.add(k);
+    })));
+  } catch (e) {}
+  ['book','watch','dress','name','work','play','study','answer','wish','call','show','ring','suit']
+    .forEach(k => set.delete(k));   /* 这些同时也是动词，一般句型里判不准就不判 */
+  return set;
+})();
+/* 完整名词集（含 book/watch 这类兼动词的）——只给「be + 代词 + 名词」这个窄句型用。
+   在这个句型里 book 不可能是动词（is you book 只能是 is your book），所以不会误报。 */
+const ALL_NOUNS = (() => {
+  const set = new Set();
+  try {
+    DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+      const k = String(w.w).toLowerCase();
+      if (String(w.pos).includes('名词') && k.indexOf(' ') < 0) set.add(k);
+    })));
+  } catch (e) {}
+  return set;
+})();
+/* ⚠️ her / his / its 本身就能当物主代词（her coat 是对的），绝不能列进来，
+   否则会把正确的句子判成错——这是全册例句自检抓出来的。 */
+const PRON_NEEDS_POSS = { i:'my', you:'your', he:'his', she:'her', it:'its', we:'our', they:'their',
+                          me:'my', him:'his', us:'our', them:'their' };
+
+function tokenize(s) {
+  return String(s || '').trim().split(/\s+/).map(t => t.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, ''))
+    .filter(Boolean);
+}
+/* 记录每个词后面有没有标点——跨标点的两个词不是一个词组，规则不能跨过去套。
+   （thank you, sir. 里的「you , sir」不是「你的先生」） */
+function punctFlags(s) {
+  const parts = String(s || '').trim().split(/\s+/).filter(Boolean);
+  const flags = [];
+  parts.forEach(p => { if (p.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '')) flags.push(/[,;:.!?—-]$/.test(p)); });
+  return flags;
+}
+function lower(a) { return a.map(x => x.toLowerCase()); }
+
+/* 返回 [{level:'error'|'warn', why:'错在哪', fix:'怎么改'}] */
+function checkGrammar(sent) {
+  const out = [];
+  const raw = String(sent || '').trim();
+  const T = tokenize(raw), t = lower(T), pf = punctFlags(raw);
+  if (!T.length) return out;
+  const add = (level, why, fix) => out.push({ level, why, fix });
+
+  /* R1 句首大写 */
+  if (!/^[A-Z]/.test(raw)) add('error', '句子开头没有大写', '英文句子第一个字母要大写：把「' + raw.charAt(0) + '」改成大写');
+  /* R2 句尾标点 */
+  if (!/[.!?]$/.test(raw)) add('error', '句子末尾少了标点', '陈述句结尾加句号 <b>.</b>，问句用 <b>?</b>，感叹用 <b>!</b>');
+
+  for (let i = 0; i < t.length; i++) {
+    const w = t[i], nx = t[i + 1], nx2 = t[i + 2];
+
+    /* R3 相邻重复词 */
+    if (nx && w === nx && !pf[i] && !['had','that'].includes(w))
+      add('error', '「' + w + ' ' + nx + '」写重复了', '删掉多余的那个 <b>' + w + '</b>');
+
+    /* R4 be 动词与主语不一致 */
+    if (nx && BE_ALL.has(nx)) {
+      if (SUBJ_I.has(w) && !['am','was'].includes(nx))
+        add('error', 'I 后面不能用 <b>' + nx + '</b>', 'I 配 <b>am</b>（过去式 was）：I <b>am</b> …');
+      if (SUBJ_3S.has(w) && !['is','was'].includes(nx))
+        add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是单数，配 <b>is</b>（过去式 was）');
+      if (SUBJ_PL.has(w) && !['are','were'].includes(nx))
+        add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是复数（you 也算），配 <b>are</b>（过去式 were）');
+    }
+
+    /* R5 第三人称单数：he/she/it + 动词原形 → 要加 s
+       ⚠️ 前面若有 do/does/did 或情态动词管着（疑问句 Does he like…／否定 He doesn't like…），
+          动词本来就该用原形，这时报「漏 s」就是把对的判成错——必须先排除。 */
+    const governed = t.slice(0, i + 1).some(x => AUX_DO.has(x) || MODALS.has(x) ||
+      /^(don't|doesn't|didn't|dont|doesnt|didnt)$/.test(x));
+    const pastCtx = t.some(x => PAST_MARKERS.has(x));
+    if (!governed && !pastCtx && SUBJ_3S_FOR_VERB.has(w) && nx && BASE_VERBS.has(nx) &&
+        !SAME_BASE_PAST.has(nx) && !BE_ALL.has(nx) && !MODALS.has(nx) && !AUX_DO.has(nx))
+      add('error', w + ' 后面的动词 <b>' + nx + '</b> 少了 s',
+          '主语是 he / she / it 时，一般现在时的动词要加 s：<b>' + (VERB_FORMS[nx][0] || nx + 's') + '</b>');
+    /* R5b 复数主语 + 三单动词 */
+    if (!governed && (SUBJ_PL.has(w) || SUBJ_I.has(w)) && nx && THIRD_TO_BASE[nx] && !BE_ALL.has(nx))
+      add('error', w + ' 后面的动词不该加 s',
+          w + ' 不是第三人称单数，用原形 <b>' + THIRD_TO_BASE[nx] + '</b>');
+
+    /* R6 一个句子两个时态标记：do/does/did 管辖的动词必须用原形。
+       疑问句里动词隔着主语（Does he like…），所以要往后扫最多 3 个词找第一个动词。 */
+    if (AUX_DO.has(w)) {
+      for (let k = i + 1; k < Math.min(i + 4, t.length); k++) {
+        const v = t[k];
+        if (v === 'not' || v === "n't" || SUBJ_I.has(v) || SUBJ_3S.has(v) || SUBJ_PL.has(v) ||
+            /^(the|a|an|my|your|his|her|our|their|this|that)$/.test(v)) continue;
+        if (THIRD_TO_BASE[v] || PAST_TO_BASE[v]) {
+          add('error', '<b>' + w + '</b> 后面的动词 <b>' + v + '</b> 要用原形',
+              w + ' 已经带走了时态和人称，一个句子只能有一个时态标记，动词还原成 <b>' +
+              (THIRD_TO_BASE[v] || PAST_TO_BASE[v]) + '</b>');
+        }
+        break;   /* 只看第一个实义动词 */
+      }
+    }
+    /* R6b 情态动词后必须原形 */
+    if (MODALS.has(w) && nx && (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
+      add('error', '<b>' + w + '</b> 后面的动词要用原形',
+          '情态动词（can/must/will…）后面一律跟原形：<b>' + (THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) + '</b>');
+
+    /* R7 be + 动词原形（缺 ing 或多余的 be） */
+    if (BE_ALL.has(w) && nx && BASE_VERBS.has(nx) && !['be','been','being'].includes(nx) && !AUX_DO.has(nx))
+      add('error', '<b>' + w + ' ' + nx + '</b> 连在一起不对',
+          '要么去掉 <b>' + w + '</b>，要么把动词改成 ing：' + w + ' <b>' + nx.replace(/e$/, '') + 'ing</b>');
+
+    /* R8 a / an 用错（看后面单词的读音） */
+    if (w === 'a' && nx && /^[aeiou]/.test(nx) && !AN_EXCEPT_A.has(nx))
+      add('error', '<b>a ' + nx + '</b> 要改成 <b>an ' + nx + '</b>', nx + ' 读音以元音开头，冠词用 <b>an</b>');
+    if (w === 'an' && nx && !/^[aeiou]/.test(nx) && !A_EXCEPT_AN.has(nx))
+      add('error', '<b>an ' + nx + '</b> 要改成 <b>a ' + nx + '</b>', nx + ' 读音以辅音开头，冠词用 <b>a</b>');
+
+    /* R9 双重否定 */
+    if ((w === "don't" || w === 'dont' || w === "doesn't" || w === "didn't" || w === 'not') &&
+        nx && ['never','nothing','nobody','none'].includes(nx))
+      add('error', '英语不能用双重否定', '把 <b>' + w + '</b> 去掉，只留 <b>' + nx + '</b>（它本身就是否定）');
+
+    /* R10 very 不能直接修饰动词 */
+    if (w === 'very' && nx && (BASE_VERBS.has(nx) || THIRD_TO_BASE[nx] || PAST_TO_BASE[nx]) && !BE_ALL.has(nx))
+      add('error', 'very 不能直接放在动词前面',
+          '改成把 <b>very much</b> 放到句子后面：I <b>' + nx + '</b> it <b>very much</b>.');
+
+    /* R11 although…but / because…so 不能同时用 */
+    if (w === 'although' || w === 'though') {
+      if (t.includes('but')) add('error', 'although 和 but 不能同时出现', '两个都表示转折，只留一个');
+    }
+    if (w === 'because' && t.includes('so'))
+      add('error', 'because 和 so 不能同时出现', '两个都表示因果，只留一个');
+
+    /* R12 介词后面跟动词原形 → 该用 ing */
+    if (['at','for','of','in','on','about','with','without','after','before'].includes(w) &&
+        nx && BASE_VERBS.has(nx) && !BE_ALL.has(nx) && !MODALS.has(nx))
+      add('warn', '介词 <b>' + w + '</b> 后面通常跟名词或动词 ing',
+          '如果这里是动作，改成 <b>' + nx.replace(/e$/, '') + 'ing</b>');
+
+    /* R15b be 动词 + 代词 + 名词：这个句型里名词不可能是动词，可以放心判
+       （Where is you book? → your book） */
+    if (BE_ALL.has(w) && nx && PRON_NEEDS_POSS[nx] && nx2 && ALL_NOUNS.has(nx2) && !pf[i + 1])
+      add('error', '<b>' + nx + ' ' + nx2 + '</b> 不对，这里要用「谁的」',
+          '表示「' + nx + ' 的 ' + nx2 + '」要用物主代词：<b>' + PRON_NEEDS_POSS[nx] + ' ' + nx2 + '</b>');
+
+    /* R15 代词后面直接跟名词 → 该用物主代词（中文「你书」直译成 you book） */
+    if (PRON_NEEDS_POSS[w] && nx && PURE_NOUNS.has(nx) && !pf[i])
+      add('error', '<b>' + w + ' ' + nx + '</b> 不对，这里要用「谁的」',
+          '表示「' + w + ' 的 ' + nx + '」要用物主代词：<b>' + PRON_NEEDS_POSS[w] + ' ' + nx + '</b>');
+
+    /* R13 to + 动词ing（want to / like to 后面要原形） */
+    if (w === 'to' && nx && /ing$/.test(nx) && nx.length > 4 && !['nothing','something','anything','morning','evening'].includes(nx))
+      add('warn', '<b>to</b> 后面通常跟动词原形', 'to 是不定式符号，后面用原形：to <b>' + nx.replace(/ing$/, '') + '</b>');
+  }
+
+  /* R14 整句没有动词 */
+  const hasVerbTok = t.some(x => BE_ALL.has(x) || MODALS.has(x) || AUX_DO.has(x) ||
+    BASE_VERBS.has(x) || THIRD_TO_BASE[x] || PAST_TO_BASE[x] || /(ed|ing)$/.test(x));
+  if (!hasVerbTok) add('error', '这句话里好像没有动词', '每句英文都要有动词：是 am/is/are，或 like/have/go 这类动作词');
+
+  /* 去重（同一条只报一次） */
+  const seen = new Set();
+  return out.filter(o => { const k = o.level + o.why; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
 /* ========== 路由 ========== */
 let cur = { unit: null, sec: null, mode: null };
 function goBack() {
@@ -349,7 +577,7 @@ function makeRender() {
       ' <button class="btn-mini" onclick="speak(' + JSON.stringify(e) + ')">🔊</button></div>').join('') +
     (mine.length ? '<div style="margin-top:12px;font-weight:600;font-size:14px">✍️ 你已经造的</div>' +
       mine.map((s, k) => '<div class="mine">' + (k + 1) + '. ' + esc(s) + '</div>').join('') : '') +
-    '<div class="hint-box">✏️ 这句要<b>至少 5 个单词</b>、要用上「<b>' + esc(w.w) + '</b>」，而且<b>不能和自己前面那几句重复</b>。</div>' +
+    '<div class="hint-box">✏️ 这句要<b>至少 5 个单词</b>、要用上「<b>' + esc(w.w) + '</b>」，而且<b>不能和自己前面那几句重复</b>。<br>写完按「检查」，系统会<b>直接告诉你哪里错了、要怎么改</b>。</div>' +
     '<textarea class="inp" id="mkIn" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="用这个词造第 ' + (mk.j + 1) + ' 句你自己的话…"></textarea>' +
     '<button class="btn btn-main" onclick="makeCheck()">✨ 检查我的句子</button>' +
     (mk.i + mk.j > 0 ? '<button class="btn btn-ghost" onclick="makePrev()">← 上一句</button>' : '') +
@@ -374,21 +602,31 @@ function makeCheck() {
   if (dup) {
     bad('这句和你前面造的「' + esc(dup) + '」太像了。<br>换个<b>角度</b>再想一句：换人（I→My brother）、换时间（今天→昨天）、换地方，或改成问句/否定句 💡'); return;
   }
-  /* 到这里三道硬检查都过了 → 给逐项核对清单（孩子没有判断能力，不能只问「你觉得对吗」） */
-  const capOK = /^[A-Z]/.test(s), endOK = /[.!?]$/.test(s), vbOK = hasVerb(s);
-  const row = (o, t, f) => '<li>' + (o ? '✅ ' : '⚠️ ') + t + (o ? '' :
-    '<br><span style="color:#c0392b;font-size:13px">→ ' + f + '</span>') + '</li>';
-  $('#mkFb').innerHTML = '<div class="fb tip">🔍 <b>照着这张表核对你的句子</b><div class="eg" style="margin:8px 0">' + esc(s) + '</div>' +
-    '<ul class="chk">' +
-      row(capOK, '第一个字母大写了吗？', '英文句子开头要大写') +
-      row(endOK, '句子末尾有标点吗？', '陈述句结尾加句号 <b>.</b>，问句用 <b>?</b>') +
-      row(vbOK, '句子里有动词吗？', '每句英文都要有动词（am/is/are，或 like/have/go 这类动作词）') +
-      '<li>🔤 再看动词形式：主语是 he/she/it 时动作词要加 <b>s</b>（He <b>likes</b>）；说过去的事用过去式（I <b>went</b>）。</li>' +
-    '</ul>' +
-    '<div style="margin-top:8px;font-size:13.5px">📖 和上面 3 个例句比一比，结构像不像？</div></div>' +
-    '<button class="btn btn-main" onclick="makePass(true)">✅ 都核对过，没问题</button>' +
-    '<button class="btn btn-ghost" onclick="makePass(false)">🙋 有不确定的，先记下来</button>';
+  /* 三道硬检查都过了 → 真正做语法判分（孩子没有判断能力，必须由系统给结论） */
   window.__mkS = s;
+  const issues = checkGrammar(s);
+  const errs = issues.filter(x => x.level === 'error');
+  const warns = issues.filter(x => x.level === 'warn');
+  const list = arr => '<ul class="chk">' + arr.map(x =>
+      '<li>' + (x.level === 'error' ? '❌ ' : '💡 ') + x.why +
+      '<br><span style="color:#c0392b;font-size:13.5px">→ ' + x.fix + '</span></li>').join('') + '</ul>';
+
+  if (errs.length) {
+    $('#mkFb').innerHTML =
+      '<div class="fb bad">这句有 <b>' + errs.length + '</b> 个地方要改：' +
+        '<div class="eg" style="margin:8px 0;background:#fff">' + esc(s) + '</div>' +
+        list(errs) + (warns.length ? list(warns) : '') +
+        '<div style="margin-top:8px;font-size:13.5px">📖 改完再按一次「检查」。也可以看看上面 3 个例句是怎么写的。</div>' +
+      '</div>' +
+      '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
+      '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
+    return;
+  }
+  $('#mkFb').innerHTML =
+    '<div class="fb ok">🎉 <b>检查通过！</b>这句在拼写、大小写、标点、主谓一致、时态标记、冠词这些地方都没问题。' +
+      (warns.length ? '<div style="margin-top:8px">还有一点小提醒（不算错）：</div>' + list(warns) : '') +
+    '</div>' +
+    '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
 }
 function makePass(ok) {
   const w = cur.sec.words[mk.i], s = window.__mkS || '';
@@ -397,12 +635,11 @@ function makePass(ok) {
   const total = cur.sec.words.length * MK_PER_WORD;
   const doneN = mk.i * MK_PER_WORD + mk.j + 1;
   setProg(cur.sec.id, 'make', doneN, total);
-  const last = (mk.i === cur.sec.words.length - 1) && (mk.j === MK_PER_WORD - 1);
-  $('#mkFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'tip') + '">' +
-    (ok ? '🎉 记下这一句了！' : '记进错题本了，复习时再练这个词 💪') + '</div>' +
-    '<button class="btn btn-main" onclick="makeNext()">' +
-    (mk.j < MK_PER_WORD - 1 ? '再造第 ' + (mk.j + 2) + ' 句 →' : (last ? '完成 →' : '下一个词 →')) + '</button>';
+  /* 导航交给调用者（makeAccept / makeGiveUp），这里只记账 */
 }
+/* 一次点击就前进——「收下」之后还要再点一次「下一句」是多余操作 */
+function makeAccept()  { makePass(true);  makeNext(); }
+function makeGiveUp()  { makePass(false); makeNext(); }
 function makeNext() { if (mk.j < MK_PER_WORD - 1) mk.j++; else { mk.j = 0; mk.i++; } makeRender(); }
 function makePrev() { if (mk.j > 0) mk.j--; else if (mk.i > 0) { mk.i--; mk.j = MK_PER_WORD - 1; } makeRender(); }
 
