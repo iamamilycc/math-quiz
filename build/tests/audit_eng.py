@@ -92,11 +92,30 @@ for c in DATA['chapters']:
     print(f"  {c['id']}: {[len(s['quiz']) for s in c['sections']]} / "
           f"{[len(s['notes']) for s in c['sections']]}")
 
+# G. 需人工复核：以「不地道 / 语法没错」为由判错的题
+#    铁律：题干问「正确的有」时，判错的理由必须是【语法错误】。
+#    只是「不地道 / 语气不合适」的句子不能算错——否则孩子会把对的当错的背下来。
+#    确实要考语用，题干必须写成「最合适的说法是」。
+PRAGMATIC = re.compile(r'语法.{0,4}(没错|正确|成立|不算错)|不地道|一般不这么说|通常不这么')
+for cid, sid, q in allq:
+    if not PRAGMATIC.search(q.get('explain', '')):
+        continue
+    stem = q['stem']
+    if re.search(r'最合适|最恰当|最自然|最地道', stem):
+        continue                       # 题干已声明在比「合适度」，合规
+    info['G1-用语用理由判错（需人工复核题干口径）'].append((sid, q['id'], stem[:34]))
+
 print("\n" + "=" * 60)
 print("信息项（已判定可接受，不需修）")
 print("=" * 60)
 for k in sorted(info):
     print(f"  ℹ️ {k}：{len(info[k])} 组")
+    if k.startswith('G1'):
+        for it in info[k]:
+            print(f"     · {it[0]}/q{it[1]}  {it[2]}")
+        print("     复核口径：判错的理由必须是【语法错误】；只是「不地道/语气不对」")
+        print("     不能算错，否则孩子会把对的当错的背下来。要考语用就把题干")
+        print("     写成「最合适的说法是」。")
     if k.startswith('B1'):
         print("     题干用统一模板（如「下列句子正确的有」）是刻意的：做题页每题上方")
         print("     有考点标签、错题本也显示 point + 章节，孩子能分清在考什么。")

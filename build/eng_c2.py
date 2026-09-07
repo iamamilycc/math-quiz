@@ -293,7 +293,7 @@ s3 = {
             "examples": [
                 {"tag": "基础", "text": "<b>Come</b> in.（进来）／ <b>Sit</b> down, please.（请坐）／ <b>Open</b> the door.（开门）—— 开头都是光秃秃的动词原形。"},
                 {"tag": "进阶", "text": "Let’s + 动词原形 表示“咱们一起做吧”，是提建议：<b>Let’s go</b> to the park.（我们去公园吧）注意 Let’s 是 Let us 的缩写，后面同样跟原形。"},
-                {"tag": "易错", "text": "“<u>You come</u> here!” 语气很凶 ✗（英语里加上 you 会变成责备）／ “<u>Comes</u> here.” ✗（祈使句不用第三人称单数形式）。正确就是 <b>Come</b> here. ✓ 记住：祈使句既没有主语，也不变形。"}
+                {"tag": "易错", "text": "“<u>Comes</u> here.” ✗（祈使句不变形，不用第三人称单数）／ “<u>To come</u> here.” ✗（动词前不能加 to）。正确就是 <b>Come</b> here. ✓ 另外“You come here!”<b>语法上成立</b>（强调式祈使句），但加了 you 语气很冲、像在责备，日常不这么说——这是<b>语气</b>问题，不是语法错误，两者要分清。"}
             ],
             "think": "中文说“你过来”很正常，英语说 You come here! 却显得凶，为什么加一个 you 语气就变了？"
         },
@@ -335,10 +335,10 @@ s3 = {
          "explain": "句中有 be 动词（are / is），疑问和否定都动 be，不用 do / does。B、D 错。E 是问计划的标准句型。"},
         {"id": 3, "type": "multi", "point": "祈使句的形式（想一想·刁钻）",
          "stem": "下列祈使句<b>正确</b>的有（　）【多选】",
-         "options": ["A. Come in, please.", "B. You come here!", "C. Comes here.",
+         "options": ["A. Come in, please.", "B. To come in, please.", "C. Comes here.",
                      "D. Let’s go to the park.", "E. Sit down, please."],
          "answer": ["A", "D", "E"],
-         "explain": "祈使句<b>省略主语、用动词原形</b>。B 加了 you，语气变成责备，一般不这么说。C 用了第三人称单数 comes，祈使句不变形。A、D、E 都是标准写法。"},
+         "explain": "祈使句<b>省略主语、直接用动词原形开头</b>。B 错：动词前不能加 to。C 错：祈使句不变形，不用第三人称单数 comes。A、D、E 都是标准写法。<br>补充一个容易混的点：“<b>You come here!</b>”其实<b>语法上是成立的</b>（叫强调式祈使句），只是加了 you 语气变得很冲、像在责备，日常不会这么说——这属于<b>语气问题</b>，和 B、C 的<b>语法错误</b>不是一回事，别混为一谈。"},
         {"id": 4, "type": "multi", "point": "否定祈使句（想一想·刁钻）",
          "stem": "下列否定祈使句<b>正确</b>的有（　）【多选】",
          "options": ["A. Don’t run in the classroom.", "B. Not run here.",
