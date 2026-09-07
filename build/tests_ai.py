@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+功能：造句 AI 第二层的闭环测试（用 mock 拦截 fetch，不需要真的 API Key）
+用法：python3 build/tests_ai.py
+⭐ 要验证的核心：AI 是「加分项」，绝不能变成「减分项」——
+   没 Key 照常用、AI 挂了不挡路、AI 判错能人工否决。
+"""
+import os, sys, socket, http.server, threading, functools
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(ROOT)
+FAILS = []
+
+
+def ck(name, cond, detail=''):
+    print(('  ✅ ' if cond else '  ❌ ') + name + ('' if cond else '   << ' + str(detail)[:200]))
+    if not cond:
+        FAILS.append(name)
+
+
+# ⚠️ Playwright 的 evaluate 只传一个参数——写成 (reply, status) 会让 status 永远是
+#    undefined，测试就会「因为错误的原因通过」。必须收成一个参数再解构。
+MOCK = """(args) => {
+  const reply = args[0], status = args[1];
+  window.__aiCalls = 0;
+  window.fetch = async (url, opt) => {
+    window.__aiCalls++;
+    window.__aiUrl = url;
+    window.__aiAuth = (opt.headers || {})['Authorization'] || '';
+    window.__aiBody = opt.body;
+    if (status === 'timeout') { await new Promise(r => setTimeout(r, 20000)); }
+    if (status && status !== 200 && status !== 'timeout')
+      return { ok: false, status: status, text: async () => 'err' };
+    return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: JSON.stringify(reply) } }] }) };
+  };
+}"""
+
+
+def main():
+    from playwright.sync_api import sync_playwright
+    s = socket.socket(); s.bind(('127.0.0.1', 0)); port = s.getsockname()[1]; s.close()
+    h = functools.partial(http.server.SimpleHTTPRequestHandler, directory=ROOT)
+    httpd = http.server.ThreadingHTTPServer(('127.0.0.1', port), h)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        with sync_playwright() as pw:
+            b = pw.chromium.launch(); pg = b.new_page(viewport={'width': 400, 'height': 900})
+            errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+            pg.goto(f'http://127.0.0.1:{port}/words.html', wait_until='networkidle')
+            pg.wait_for_timeout(300)
+            T = lambda: pg.evaluate("document.body.innerText")
+            btn = lambda t: pg.locator(f'button:has-text("{t}")').first
+
+            # ---- 设置面板 ----
+            btn('家长设置').click(); pg.wait_for_timeout(200)
+            ck('设置面板打得开', 'AI 检查' in T() and '智谱 API Key' in T())
+            ck('说明写清楚了不填也能用', '不填也能正常用' in T(), T()[:200])
+            ck('说明写清楚了 Key 存哪里', '只存在' in T() and '这台设备' in T(), T()[:300])
+            pg.fill('#aiKeyIn', 'test-key-123')
+            btn('保存').click(); pg.wait_for_timeout(200)
+            ck('保存后有回馈', '已保存' in T())
+            ck('Key 存进 localStorage', pg.evaluate("localStorage.getItem('mathquiz_zhipu_key')") == 'test-key-123')
+            ck('Key 输入框是密码类型（不明文显示）',
+               pg.evaluate("(()=>{openSettings();const e=document.getElementById('aiKeyIn');return e&&e.type;})()") == 'password')
+
+            def go_make():
+                pg.evaluate("renderHome(); openUnit(0); openSec(0); openMode('make')")
+                pg.wait_for_timeout(250)
+
+            def try_sent(v):
+                pg.fill('#mkIn', v)
+                btn('检查我的句子').click()
+                pg.wait_for_timeout(700)
+                return T()
+
+            # ---- ① AI 说通过 ----
+            go_make()
+            pg.evaluate(MOCK, [{"ok": True, "tip": "意思很清楚", "better": "Excuse me, may I ask you something?",
+                                "betterZh": "打扰一下，我能问你件事吗？"}, 200])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('语法层先给出通过', '语法检查通过' in t, t[-300:])
+            ck('AI 说通过 → 显示意思也没问题', '意思也没问题' in t, t[-300:])
+            ck('显示更地道的说法', '更地道的说法' in t, t[-300:])
+            ck('请求发到智谱端点', 'open.bigmodel.cn' in pg.evaluate("window.__aiUrl || ''"))
+            ck('带上了 Key', 'test-key-123' in pg.evaluate("window.__aiAuth || ''"))
+
+            # ---- ② AI 说意思不通 ----
+            go_make()
+            pg.evaluate(MOCK, [{"ok": False, "tip": "书不能吃", "fix": "I read a book every day.",
+                                "better": "Please excuse my late reply.", "betterZh": "请原谅我回复得晚。"}, 200])
+            # 句子必须用上当前生词（excuse），否则被硬检查提前挡下、走不到 AI
+            t = try_sent('I eat this excuse every day.')
+            ck('语法层仍判通过（这句语法确实没错）', '语法检查通过' in t, t[-300:])
+            ck('AI 指出意思有问题', '意思上有问题' in t and '书不能吃' in t, t[-300:])
+            ck('给出修正句', 'I read a book every day.' in t, t[-300:])
+            ck('留了人工否决的出口', '我觉得这句没问题' in t, t[-200:])
+
+            # ---- ③ AI 挂了不能挡路 ----
+            go_make()
+            pg.evaluate(MOCK, [{}, 500])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('AI 报错时语法结论仍然有效', '语法检查通过' in t and '仍然有效' in t, t[-300:])
+            ck('AI 报错时仍能继续', '收下这一句' in t, t[-200:])
+
+            # ---- ④ Key 无效 ----
+            go_make()
+            pg.evaluate(MOCK, [{}, 401])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('401 提示 Key 无效', 'Key 无效' in t, t[-300:])
+            ck('401 时仍能继续', '收下这一句' in t, t[-200:])
+
+            # ---- ⑤ 语法错的句子不该浪费 AI 调用 ----
+            go_make()
+            pg.evaluate(MOCK, [{"ok": True}, 200])
+            t = try_sent('He like this excuse very much.')
+            ck('语法就错 → 不调 AI（省额度）', pg.evaluate("window.__aiCalls") == 0,
+               'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
+            ck('语法错照常给出改法', '少了 s' in t, t[-250:])
+
+            # ---- ⑥ 清除 Key 后回到纯规则 ----
+            pg.evaluate("aiSetKey('')")
+            go_make()
+            pg.evaluate(MOCK, [{"ok": True}, 200])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('清除 Key 后不再调 AI', pg.evaluate("window.__aiCalls") == 0)
+            ck('清除 Key 后照常通过', '语法检查通过' in t and '收下这一句' in t, t[-200:])
+
+            ck('全程无 JS 错误', not errs, errs[:2])
+            b.close()
+    finally:
+        httpd.shutdown()
+
+    print()
+    if FAILS:
+        print('❌ 失败 %d 项：%s' % (len(FAILS), '、'.join(FAILS)))
+        sys.exit(1)
+    print('✅ AI 第二层全部通过')
+
+
+if __name__ == '__main__':
+    main()

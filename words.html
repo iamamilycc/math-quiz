@@ -500,6 +500,97 @@ function checkGrammar(sent) {
   return out.filter(o => { const k = o.level + o.why; if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
+/* ========== AI 第二层：语义与地道度检查（智谱，可选） ==========
+   规则层已经覆盖语法（免费、即时、不会乱判）。AI 只补规则做不到的那部分：
+   句子意思通不通、词搭配对不对、有没有更地道的说法。
+   ⚠️ 没设 Key 就完全跳过——规则层的结论照样有效，不影响使用。
+   ⚠️ Key 只存在这台设备的 localStorage，不进代码、不进仓库、不发去别处（除了智谱本身）。 */
+const AI_KEY_LS = 'mathquiz_zhipu_key';
+const AI_MODEL_LS = 'mathquiz_zhipu_model';
+const AI_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+function aiGetKey() { try { return localStorage.getItem(AI_KEY_LS) || ''; } catch (e) { return ''; } }
+function aiSetKey(k) {
+  try { if (k && k.trim()) localStorage.setItem(AI_KEY_LS, k.trim()); else localStorage.removeItem(AI_KEY_LS); } catch (e) {}
+}
+function aiGetModel() { try { return localStorage.getItem(AI_MODEL_LS) || 'glm-4-flash'; } catch (e) { return 'glm-4-flash'; } }
+function aiSetModel(m) { try { localStorage.setItem(AI_MODEL_LS, m); } catch (e) {} }
+
+async function aiCheckSentence(word, sentence) {
+  const key = aiGetKey();
+  if (!key) return null;                       /* 没 Key → 静默跳过 */
+  const prompt =
+    '你是亲切的小学英语老师。孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
+    '你只需要判断这两点：\n' +
+    '1. 句子的**意思通不通**（例如 "I eat a book every day." 语法没错但意思荒谬，算不通）。\n' +
+    '2. 有没有**明显的搭配错误**（例如 open the light 应该是 turn on the light）。\n' +
+    '⚠️ 下列情况一律判 ok:true，不准判错：语序/副词位置只要可以接受、用词是否「最自然」、' +
+    '风格好不好、大小写标点小毛病、句子简单幼稚。\n' +
+    '⚠️ 拿不准、或只是「可以更好」时，一律判 ok:true。' +
+    '把孩子本来正确的句子判成错，会让他把对的当错的记住，比漏掉一个错更糟。\n' +
+    '不管对不对，都用同一个单词示范一句更地道、难度相近的句子放进 better。\n' +
+    '只输出 JSON：{"ok":true或false,"tip":"一句简体中文说明，30字内","fix":"若不通，给修正后的完整句子；通顺则留空","better":"用同一个单词更地道的一句","betterZh":"better 的中文翻译"}\n\n' +
+    '指定单词：' + word + '\n孩子的句子：' + sentence;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);   /* 12 秒还没回就放弃，别让孩子干等 */
+  try {
+    const resp = await fetch(AI_ENDPOINT, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: aiGetModel(), temperature: 0.2, max_tokens: 400,
+                             response_format: { type: 'json_object' },
+                             messages: [{ role: 'user', content: prompt }] })
+    });
+    clearTimeout(timer);
+    if (resp.status === 401) return { error: 'Key 无效或已过期，请在设置里重新填写' };
+    if (!resp.ok) return { error: '智谱返回 ' + resp.status + '，这次跳过 AI 检查' };
+    const j = await resp.json();
+    let t = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    t = t.replace(/^```json\s*|^```\s*|```$/gm, '').trim();
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) t = t.slice(a, b + 1);
+    const r = JSON.parse(t);
+    if (typeof r.ok !== 'boolean') return { error: 'AI 返回格式不对，这次跳过' };
+    return { ok: r.ok, tip: String(r.tip || ''), fix: String(r.fix || ''),
+             better: String(r.better || ''), betterZh: String(r.betterZh || '') };
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: e.name === 'AbortError' ? 'AI 检查超时了，这次跳过' : '连不上智谱，这次跳过' };
+  }
+}
+
+/* 家长设置面板：填 Key / 换模型 / 清除 */
+function openSettings() {
+  const has = !!aiGetKey();
+  $('#view').innerHTML =
+    '<div class="stage"><div style="font-size:17px;font-weight:600;margin-bottom:6px">⚙️ 家长设置 · AI 检查</div>' +
+    '<div class="hint-box">造句这一关<b>本来就会检查语法</b>（免费、不需要联网设置），' +
+    '这里填的 AI 只是<b>再加一层</b>：判断句子的意思通不通、搭配对不对。<br>' +
+    '不填也能正常用，只是「I eat a book every day.」这种语法没错但意思荒谬的句子查不出来。</div>' +
+    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">智谱 API Key' +
+      (has ? '　<span style="color:#3e8e5a;font-size:13px">（已设置 ✓）</span>' : '') + '</div>' +
+    '<input class="inp" id="aiKeyIn" type="password" autocomplete="off" placeholder="' +
+      (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
+    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
+    '<select class="inp" id="aiModelIn">' +
+      '<option value="glm-4-flash">glm-4-flash（免费，够用）</option>' +
+      '<option value="glm-4-plus">glm-4-plus（更准，按量计费）</option></select>' +
+    '<div class="hint-box" style="margin-top:14px">🔒 Key 只存在<b>这台设备的浏览器里</b>，' +
+    '不会进代码、不会上传到 GitHub，只会发给智谱本身。换设备要重新填。<br>' +
+    '⚠️ 同一台设备上任何人都能在设置里看到它，孩子的设备请用<b>额度有限的 Key</b>。</div>' +
+    '<button class="btn btn-main" onclick="saveSettings()">保存</button>' +
+    (has ? '<button class="btn btn-ghost" onclick="clearKey()">清除 Key</button>' : '') +
+    '<button class="btn btn-ghost" onclick="renderHome()">返回</button>' +
+    '<div id="setFb"></div></div>';
+  const sel = $('#aiModelIn'); if (sel) sel.value = aiGetModel();
+}
+function saveSettings() {
+  const k = ($('#aiKeyIn') || {}).value || '';
+  if (k.trim()) aiSetKey(k);
+  aiSetModel(($('#aiModelIn') || {}).value || 'glm-4-flash');
+  $('#setFb').innerHTML = '<div class="fb ok">已保存。造句时会在语法检查之后再做一次 AI 检查。</div>';
+}
+function clearKey() { aiSetKey(''); openSettings(); }
+
 /* ========== 路由 ========== */
 let cur = { unit: null, sec: null, mode: null };
 function goBack() {
@@ -522,7 +613,9 @@ function renderHome() {
       '<span><span class="big-card-title">' + esc(u.title) + '</span>' +
       '<span class="big-card-desc">' + u.sections.length + ' 节 · ' + nw + ' 个单词</span></span>' +
       '<span class="prog">' + Math.round(dn * 100 / (nw || 1)) + '%</span></button>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' +
+  '<button class="btn btn-ghost" style="margin-top:18px" onclick="openSettings()">⚙️ 家长设置 · AI 检查' +
+    (aiGetKey() ? '（已开启）' : '（未开启）') + '</button>';
 }
 function openUnit(i) { cur.unit = DATA.units[i]; renderUnit(); }
 function renderUnit() {
@@ -710,7 +803,7 @@ function makeRender() {
     (mk.i + mk.j > 0 ? '<button class="btn btn-ghost" onclick="makePrev()">← 上一句</button>' : '') +
     '<div id="mkFb"></div></div>';
 }
-function makeCheck() {
+async function makeCheck() {
   const w = cur.sec.words[mk.i], s = (($('#mkIn') || {}).value || '').trim();
   const bad = h => { $('#mkFb').innerHTML = '<div class="fb bad">' + h + '</div>'; };
   if (!s) { bad('先写一句话再检查 🙂'); return; }
@@ -749,11 +842,36 @@ function makeCheck() {
       '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
     return;
   }
-  $('#mkFb').innerHTML =
-    '<div class="fb ok">🎉 <b>检查通过！</b>这句在拼写、大小写、标点、主谓一致、时态标记、冠词这些地方都没问题。' +
+  const passHtml =
+    '<div class="fb ok">🎉 <b>语法检查通过！</b>拼写、大小写、标点、主谓一致、时态、冠词都没问题。' +
       (warns.length ? '<div style="margin-top:8px">还有一点小提醒（不算错）：</div>' + list(warns) : '') +
-    '</div>' +
-    '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
+    '</div>';
+  const acceptBtn = '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
+  if (!aiGetKey()) { $('#mkFb').innerHTML = passHtml + acceptBtn; return; }
+  /* 有 Key → 再做一层：意思通不通、搭配对不对 */
+  $('#mkFb').innerHTML = passHtml + '<div class="fb tip">⏳ 再让 AI 老师看一眼意思通不通…</div>';
+  const r = await aiCheckSentence(w.w, s);
+  if (!r || r.error) {                      /* AI 出问题不能影响孩子——语法结论照样算数 */
+    $('#mkFb').innerHTML = passHtml +
+      (r && r.error ? '<div class="fb tip">（' + esc(r.error) + '，语法检查的结论仍然有效）</div>' : '') +
+      acceptBtn;
+    return;
+  }
+  const betterHtml = r.better ?
+    '<div class="eg" style="margin-top:8px">🌟 <b>更地道的说法</b>：' + esc(r.better) +
+      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') + '</div>' : '';
+  if (r.ok) {
+    $('#mkFb').innerHTML = passHtml +
+      '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterHtml + '</div>' +
+      acceptBtn;
+  } else {
+    $('#mkFb').innerHTML = passHtml +
+      '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
+        (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
+        betterHtml + '</div>' +
+      '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
+      '<button class="btn btn-ghost" onclick="makeAccept()">我觉得这句没问题，收下</button>';
+  }
 }
 function makePass(ok) {
   const w = cur.sec.words[mk.i], s = window.__mkS || '';

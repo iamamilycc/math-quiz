@@ -43,6 +43,8 @@ python3 build/tests/audit_eng.py        # 英语题库深度自审
 node    build/tests/walkthrough_eng.js  # 使用者视角走查
 python3 build/tests/inject_rules.py     # 故障注入：确认建置规则真的会变红
 python3 build/tests_click.py            # 单词模块真点击走查
+python3 build/tests_ai.py               # AI 第二层（mock 拦 fetch，不需要真 Key）
+python3 build/tests_parity.py           # 建置端与造句端的用词规则必须一致
 ```
 
 ## 内容规则（已焊成建置断言，不过就不生成文件）
@@ -65,6 +67,18 @@ python3 build/tests_click.py            # 单词模块真点击走查
 
 设计原则：**宁可漏报，不可误报** —— 把对的句子判成错，比漏掉一个错更伤（孩子会把对的当错的记）。
 `tests_grammar.js` 两半都测：错句必须被抓到，正确句必须零误报，且全册例句一条都不能被判错。
+
+### 第二层：AI 检查（可选，补规则做不到的部分）
+
+规则查语法，AI 查**意思通不通、搭配对不对**（例如 `I eat a book every day.` 语法没错但意思荒谬）。
+
+- 首页 →「⚙️ 家长设置 · AI 检查」填智谱 API Key（模型默认免费的 `glm-4-flash`）
+- **不填也能正常用** —— 规则层的结论照样有效，只是查不出语义问题
+- **语法层没过就不调 AI**（省额度），AI 挂了/超时/Key 无效都不挡路，语法结论仍然有效
+- AI 可能误判，所以留了「我觉得这句没问题，收下」的人工出口
+- 🔒 **Key 只存在设备的 localStorage**，不进代码、不进仓库、只发给智谱本身。
+  同一台设备上任何人都能在设置里看到它 —— 孩子的设备请用额度有限的 Key。
+- `tests_ai.py` 用 mock 拦 fetch 验证全部路径（通过 / 判错 / 500 / 401 / 无 Key / 不浪费调用）
 
 ## 依赖
 
