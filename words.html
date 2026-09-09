@@ -73,15 +73,6 @@ const DATA = {"units": [{"id": "w-u1", "title": "第一单元　Lesson 1-24", "s
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function normalize(t) {
-  if (t === null || t === undefined) return '';
-  return String(t).trim().replace(/\s+/g, '').replace(/　/g, '').toLowerCase();
-}
-/* 造句用：保留词边界的归一 */
-function normSent(s) {
-  return String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-}
-function wordCount(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
 
 const PROG_KEY = 'mathquiz_words_prog_v1';
 function getProg() { try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); } catch (e) { return {}; } }
@@ -136,6 +127,39 @@ function speak(t) {
   try { const u = new SpeechSynthesisUtterance(String(t)); u.lang = 'en-US'; u.rate = .9;
     speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
+
+/* 语法引擎要用的词表（判「you book」这类错误）——从本册数据展平 */
+const GRAMMAR_WORDS = (() => {
+  const a = [];
+  try { DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => a.push({ w: w.w, pos: w.pos })))); }
+  catch (e) {}
+  return a;
+})();
+/* ========================================================================
+   英语造句判分引擎（规则式，完全不依赖 AI）—— 两个站共用的单一事实源
+   ------------------------------------------------------------------------
+   ⭐ 为什么要有它：这是给孩子用的产品，孩子没有判断能力。
+      「你自己核对一下对不对」等于没判分，所以对错必须由**测过的确定性规则**给结论。
+      三层挡住：① 程序清洗（生成／外部内容先过这里，不过就丢）
+                ② 聚焦二次核对（关键事实脱离情境逐条核对）
+                ③ 程序化保底（判分一律以本引擎为准，绝不让孩子裁决 AI 说得对不对）
+
+   ⚠️ 单一事实源在 math_quiz_deploy/build/grammar_en.js。
+      精读站那份由 build/sync_grammar.py 生成，**不要手改**，改了会被 parity 测试挡下。
+
+   使用方需要在载入本文件之前提供词表（用来判「you book」这类中文直译错误）：
+      const GRAMMAR_WORDS = [{ w: 'book', pos: 'n. 名词' }, …];   // 没有就给 []
+   ======================================================================== */
+
+function normalize(t) {
+  if (t === null || t === undefined) return '';
+  return String(t).trim().replace(/\s+/g, '').replace(/　/g, '').toLowerCase();
+}
+/* 造句用：保留词边界的归一 */
+function normSent(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function wordCount(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
 
 /* ========== 造句检查（不依赖任何 AI；规则与精读站一致） ========== */
 const MK_PER_WORD = 3, MK_MIN_WORDS = 5;
@@ -257,19 +281,22 @@ const ALSO_ADJ = new Set(['clean','open','close','shut','free','warm','cool','sl
 const AN_EXCEPT_A = new Set(['university','uniform','user','european','one','once','useful','usual']); // 读音以辅音开头 → 用 a
 const A_EXCEPT_AN = new Set(['hour','honest','honour','honor','heir']);                                 // h 不发音 → 用 an
 
+/* 使用方在本文件之前定义 GRAMMAR_WORDS 就用它，没定义就当空表（那几条靠词表的规则自动失效＝漏报，安全）。
+   ⚠️ 这里不能写 var GRAMMAR_WORDS = [] —— var 会提升，和使用方的 const 撞成 SyntaxError，整页白屏。 */
+const GRAMMAR_WORDS_SAFE = (typeof GRAMMAR_WORDS !== 'undefined' && GRAMMAR_WORDS) ? GRAMMAR_WORDS : [];
 /* 从本册词表里抽出「确定是名词、且不会当动词用」的词——用来判断
    「you book」这类中文直译错误（应该是 your book）。用自己的数据判，不靠猜。 */
 const PURE_NOUNS = (() => {
   const set = new Set();
   try {
-    DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+    GRAMMAR_WORDS_SAFE.forEach(w => {
       const k = String(w.w).toLowerCase();
       /* 兼形容词的词不能算「确定是名词」——the right answer 里 right 是形容词，
          把它当主语就会把 answer 误判成动词。 */
       if (String(w.pos).includes('名词') && !String(w.pos).includes('形容词') &&
           !String(w.pos).includes('动词') && k.indexOf(' ') < 0 && !BASE_VERBS.has(k) &&
           !THIRD_TO_BASE[k] && !PAST_TO_BASE[k]) set.add(k);
-    })));
+    });
   } catch (e) {}
   ['book','watch','dress','name','work','play','study','answer','wish','call','show','ring','suit']
     .forEach(k => set.delete(k));   /* 这些同时也是动词，一般句型里判不准就不判 */
@@ -280,10 +307,10 @@ const PURE_NOUNS = (() => {
 const ALL_NOUNS = (() => {
   const set = new Set();
   try {
-    DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+    GRAMMAR_WORDS_SAFE.forEach(w => {
       const k = String(w.w).toLowerCase();
       if (String(w.pos).includes('名词') && k.indexOf(' ') < 0) set.add(k);
-    })));
+    });
   } catch (e) {}
   return set;
 })();
@@ -542,123 +569,6 @@ function checkGrammar(sent) {
   return out.filter(o => { const k = o.level + o.why; if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
-/* ========== AI 第二层：语义与地道度检查（智谱，可选） ==========
-   规则层已经覆盖语法（免费、即时、不会乱判）。AI 只补规则做不到的那部分：
-   句子意思通不通、词搭配对不对、有没有更地道的说法。
-   ⚠️ 没设 Key 就完全跳过——规则层的结论照样有效，不影响使用。
-   ⚠️ Key 只存在这台设备的 localStorage，不进代码、不进仓库、不发去别处（除了智谱本身）。 */
-const AI_KEY_LS = 'mathquiz_zhipu_key';
-const AI_MODEL_LS = 'mathquiz_zhipu_model';
-const AI_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-function aiGetKey() { try { return localStorage.getItem(AI_KEY_LS) || ''; } catch (e) { return ''; } }
-function aiSetKey(k) {
-  try { if (k && k.trim()) localStorage.setItem(AI_KEY_LS, k.trim()); else localStorage.removeItem(AI_KEY_LS); } catch (e) {}
-}
-function aiGetModel() { try { return localStorage.getItem(AI_MODEL_LS) || 'glm-4.7-flash'; } catch (e) { return 'glm-4.7-flash'; } }
-function aiSetModel(m) { try { localStorage.setItem(AI_MODEL_LS, m); } catch (e) {} }
-
-async function aiCheckSentence(word, sentence) {
-  const key = aiGetKey();
-  if (!key) return null;                       /* 没 Key → 静默跳过 */
-  const prompt =
-    '你是亲切的小学英语老师。一个中国孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
-    '你要做两件事：\n\n' +
-    '【一】判断这句话**意思通不通、搭配对不对**\n' +
-    '  · 意思荒谬算不通（如 "I eat a book every day."）；搭配错算错（如 open the light 应为 turn on the light）。\n' +
-    '  · ⚠️ 语序/副词位置只要可接受、用词是否「最自然」、风格、大小写标点、句子简单幼稚——一律判 ok:true。\n' +
-    '  · ⚠️ 拿不准或只是「可以更好」时一律 ok:true。把孩子本来对的句子判成错，' +
-    '会让他把对的当错的记住，比漏掉一个错更糟。\n' +
-    '  · 若真的不通，fix 给**改好的完整句子**（尽量保留孩子原来想表达的意思，只改错的地方）。\n\n' +
-    '【二】⭐ 最重要：**同样这个意思、同样这个场合，英语母语者平常会怎么说**\n' +
-    '  · 请**照着孩子这一句的意思去改写**，不要另起炉灶讲别的事。\n' +
-    '  · 必须仍然用上这个单词，长度和难度和孩子那句差不多（小学程度，别用生僻词）。\n' +
-    '  · 写进 better，中文翻译写进 betterZh。\n' +
-    '  · 再用一句简体中文说清楚**差在哪里**（哪个词换了／语序变了／换了个更常用的搭配），写进 diff，' +
-    '30 字内，说人话。如果孩子那句已经很地道，diff 就写「你这句已经很地道了」。\n\n' +
-    '只输出 JSON：{"ok":true或false,"tip":"一句简体中文说明，30字内","fix":"若不通，给改好的完整句子；通顺则留空",' +
-    '"better":"母语者在同样场合会说的一句（仍用这个单词）","betterZh":"better 的中文翻译","diff":"差在哪里，30字内"}\n\n' +
-    '指定单词：' + word + '\n孩子的句子：' + sentence;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);   /* 12 秒还没回就放弃，别让孩子干等 */
-  try {
-    const resp = await fetch(AI_ENDPOINT, {
-      method: 'POST', signal: ctrl.signal,
-      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: aiGetModel(), temperature: 0.2, max_tokens: 400,
-                             response_format: { type: 'json_object' },
-                             messages: [{ role: 'user', content: prompt }] })
-    });
-    clearTimeout(timer);
-    if (resp.status === 401) return { error: 'Key 无效或已过期，请在设置里重新填写' };
-    if (!resp.ok) return { error: '智谱返回 ' + resp.status + '，这次跳过 AI 检查' };
-    const j = await resp.json();
-    let t = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
-    t = t.replace(/^```json\s*|^```\s*|```$/gm, '').trim();
-    const a = t.indexOf('{'), b = t.lastIndexOf('}');
-    if (a >= 0 && b > a) t = t.slice(a, b + 1);
-    const r = JSON.parse(t);
-    if (typeof r.ok !== 'boolean') return { error: 'AI 返回格式不对，这次跳过' };
-    /* ⭐ 安全网：AI 给的句子（改好的 fix、母语者说法 better）先过我自己的语法检查器。
-       AI 会犯错，孩子看不出来——与其让他学到一句错的，不如这次不显示。
-       规则层是确定性的、测过的，用它给 AI 的输出把关，比信任 AI 可靠。 */
-    const clean = v => {
-      const t2 = String(v || '').trim();
-      if (!t2) return '';
-      const bad = checkGrammar(t2).filter(x => x.level === 'error');
-      return bad.length ? '' : t2;
-    };
-    const fixOk = clean(r.fix), betterOk = clean(r.better);
-    const dropped = (r.fix && !fixOk) || (r.better && !betterOk);
-    return { ok: r.ok, tip: String(r.tip || ''), fix: fixOk,
-             better: betterOk, betterZh: betterOk ? String(r.betterZh || '') : '',
-             diff: betterOk ? String(r.diff || '') : '', dropped: dropped };
-  } catch (e) {
-    clearTimeout(timer);
-    return { error: e.name === 'AbortError' ? 'AI 检查超时了，这次跳过' : '连不上智谱，这次跳过' };
-  }
-}
-
-/* 家长设置面板：填 Key / 换模型 / 清除 */
-function openSettings() {
-  const has = !!aiGetKey();
-  $('#view').innerHTML =
-    '<div class="stage"><div style="font-size:17px;font-weight:600;margin-bottom:6px">⚙️ 家长设置 · AI 检查</div>' +
-    '<div class="hint-box">造句这一关<b>本来就会自己判分</b>（免费、不需要联网设置），而且是三层：' +
-    '<b>①语法 ②意思说不通（吃书、喝桌子这类查表能确定的）③中式说法</b>（23 条搭配表，还会直接改好整句）。<br>' +
-    '这三层<b>凡是能百分之百确定的，一律不调 AI</b>——结论来自测过的规则，比概率模型可靠。<br>' +
-    '这里填的 AI 只补最后一小块：三层都没话说时，看一眼<b>意思通不通、有没有更地道的说法</b>' +
-    '（例如「I fly this excuse to school.」这种语法对、搭配表里也没有的怪句）。<br>' +
-    '<b>不填照样能用</b>，只是那一小块查不出来。</div>' +
-    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">智谱 API Key' +
-      (has ? '　<span style="color:#3e8e5a;font-size:13px">（已设置 ✓）</span>' : '') + '</div>' +
-    '<input class="inp" id="aiKeyIn" type="password" autocomplete="off" placeholder="' +
-      (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
-    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
-    '<div style="font-size:13px;color:#8a7fa8;margin-bottom:6px">' +
-    'glm-4.7-flash 是智谱目前免费的主力模型（30B），第一册这种小学程度的句子够用。' +
-    '想更稳可以换成按量计费的 glm-4-plus。<br>' +
-    '⚠️ 不管用哪个，<b>AI 给的示范句都会先过一遍本地语法检查</b>，没通过就不显示给孩子。</div>' +
-    '<select class="inp" id="aiModelIn">' +
-      '<option value="glm-4.7-flash">glm-4.7-flash（免费 · 30B · 推荐）</option>' +
-      '<option value="glm-4-flash-250414">glm-4-flash-250414（免费 · 更轻）</option>' +
-      '<option value="glm-4-plus">glm-4-plus（按量计费 · 最准）</option></select>' +
-    '<div class="hint-box" style="margin-top:14px">🔒 Key 只存在<b>这台设备的浏览器里</b>，' +
-    '不会进代码、不会上传到 GitHub，只会发给智谱本身。换设备要重新填。<br>' +
-    '⚠️ 同一台设备上任何人都能在设置里看到它，孩子的设备请用<b>额度有限的 Key</b>。</div>' +
-    '<button class="btn btn-main" onclick="saveSettings()">保存</button>' +
-    (has ? '<button class="btn btn-ghost" onclick="clearKey()">清除 Key</button>' : '') +
-    '<button class="btn btn-ghost" onclick="renderHome()">返回</button>' +
-    '<div id="setFb"></div></div>';
-  const sel = $('#aiModelIn'); if (sel) sel.value = aiGetModel();
-}
-function saveSettings() {
-  const k = ($('#aiKeyIn') || {}).value || '';
-  if (k.trim()) aiSetKey(k);
-  aiSetModel(($('#aiModelIn') || {}).value || 'glm-4.7-flash');
-  $('#setFb').innerHTML = '<div class="fb ok">已保存。造句时会在语法检查之后再做一次 AI 检查。</div>';
-}
-function clearKey() { aiSetKey(''); openSettings(); }
-
 /* ========== 中式英语搭配表：语法没错，但欧美人不这么说 ==========
    ⭐ 这是造句写错时**不需要 AI 也一定给得出**的地道说法来源。
    ⭐ 命中这里的条目 = 我们百分之百确定该怎么改，所以这种情况**不再调 AI**。
@@ -802,17 +712,6 @@ function collocFix(s) {
   COLLOC.forEach(c => { if (c.fix && c.re.test(o)) o = c.fix(o); });
   return o;
 }
-function collocHtml(s) {
-  const hits = collocHits(s);
-  if (!hits.length) return '';
-  return '<div class="fb tip" style="margin-top:10px">🌟 <b>这句里有中式英语的说法</b>' +
-    hits.map(h => '<div style="margin-top:8px;font-size:14px">' +
-      '<span style="color:#c0392b">✗ 你写的「' + esc(hitText(h, s)) + '」</span>　→　' +
-      '<b style="color:#3e8e5a">✓ ' + esc(h.good) + '</b>' +
-      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(h.good.split(' / ')[0]) + ')">🔊</button>' +
-      '<div style="color:#8a7fa8;font-size:13px;margin-top:3px">' + esc(h.zh) + '</div></div>').join('') +
-    '</div>';
-}
 /* ========== 意思说不通：规则能百分之百确定的那一小块 ==========
    「意思通不通」大部分要靠 AI，但有一类是查表就能确定的：吃/喝一个明显不能吃不能喝的东西。
    这类判出来一定对，所以命中就直接给结论，不用调 AI。
@@ -851,55 +750,6 @@ function senseHits(s) {
   return out.filter(o => { if (seen.has(o.why)) return false; seen.add(o.why); return true; });
 }
 
-/* 从这个词的课本例句里挑一句和孩子那句最接近的：课本例句是母语者写的、
-   而且建置时全部过了检查器，所以「没有 AI Key 也一定有一句地道的可给」。 */
-const EG_STOP = new Set(['a','an','the','is','are','am','was','were','i','you','he','she','it','we','they',
-  'my','your','his','her','its','our','their','me','him','them','to','of','in','on','at','and','or','but',
-  'this','that','these','those','do','does','did','not','very','with','for','have','has','had']);
-function closestEg(w, s) {
-  const toks = t => new Set(String(t).toLowerCase().match(/[a-z']+/g) || []);
-  const mine = toks(s); mine.delete(String(w.w).toLowerCase());
-  let best = w.egs[0], score = -1;
-  w.egs.forEach(e => {
-    let n = 0;
-    toks(e).forEach(t => { if (t !== String(w.w).toLowerCase() && !EG_STOP.has(t) && mine.has(t)) n++; });
-    if (n > score) { score = n; best = e; }
-  });
-  return best;
-}
-function bookEgHtml(w, s) {
-  const e = closestEg(w, s);
-  return '<div class="fb tip" style="margin-top:10px">📗 <b>同样用「' + esc(w.w) + '」，母语者会这样说</b>' +
-    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(e) +
-      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(e) + ')">🔊</button></div>' +
-    '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">这是课本里的原句，照着它的句型换成你自己的事，就是地道的说法。</div></div>';
-}
-/* 造句写错时给的一整套地道说法（不需要 AI，一定给得出） */
-function nativeSuggest(w, s) { const nb = nativeBlock(w); return collocHtml(s) + (nb || bookEgHtml(w, s)); }
-/* AI 给的「照着孩子那句改写成母语者的说法」——写对写错都会给 */
-function betterHtml(r) {
-  if (!r || !r.better) return '';
-  return '<div style="margin-top:10px;font-size:14px">🌟 <b>同样的意思，欧美人平常会这样说</b>' +
-    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(r.better) +
-      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(r.better) + ')">🔊</button>' +
-      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
-    '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
-    '</div>';
-}
-
-/* 「欧美人常这样说」——孩子造完句之后给他看地道说法。
-   规则层判语法、这一块给用法：同一个词，母语者习惯用哪个句型、搭配什么词。
-   有 AI Key 时还会针对孩子那一句再给一条量身的。 */
-function nativeBlock(w) {
-  const n = w.native; if (!n) return '';
-  return '<div class="fb tip" style="margin-top:10px">🌟 <b>欧美人常这样用「' + esc(w.w) + '」</b>' +
-    '<div style="margin-top:6px;font-size:14px">常用句型：<b>' + esc(n.pat) + '</b></div>' +
-    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(n.eg) +
-      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(n.eg) + ')">🔊</button>' +
-      '<br><span style="color:#8a7fa8;font-size:13px">' + esc(n.zh) + '</span></div>' +
-    (n.note ? '<div style="margin-top:6px;font-size:13.5px">💡 ' + esc(n.note) + '</div>' : '') +
-    '</div>';
-}
 /* 把检查器查到的错自动改好，直接给孩子看「改好应该是这样」。
    只做有把握的替换（词形、冠词、大小写、标点），改不动的就不改。 */
 function autoFix(sent, issues) {
@@ -971,6 +821,190 @@ function autoFix(sent, issues) {
 }
 /* 拼错时指出差在哪个字母——只说「正确拼写是 excuse」孩子不一定看得出自己少打了 c。
    逐字母对齐，少打的标绿、多打的标红划掉、打错的标红。 */
+
+
+/* ========== AI 第二层：语义与地道度检查（智谱，可选） ==========
+   规则层已经覆盖语法（免费、即时、不会乱判）。AI 只补规则做不到的那部分：
+   句子意思通不通、词搭配对不对、有没有更地道的说法。
+   ⚠️ 没设 Key 就完全跳过——规则层的结论照样有效，不影响使用。
+   ⚠️ Key 只存在这台设备的 localStorage，不进代码、不进仓库、不发去别处（除了智谱本身）。 */
+const AI_KEY_LS = 'mathquiz_zhipu_key';
+const AI_MODEL_LS = 'mathquiz_zhipu_model';
+const AI_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+function aiGetKey() { try { return localStorage.getItem(AI_KEY_LS) || ''; } catch (e) { return ''; } }
+function aiSetKey(k) {
+  try { if (k && k.trim()) localStorage.setItem(AI_KEY_LS, k.trim()); else localStorage.removeItem(AI_KEY_LS); } catch (e) {}
+}
+function aiGetModel() { try { return localStorage.getItem(AI_MODEL_LS) || 'glm-4.7-flash'; } catch (e) { return 'glm-4.7-flash'; } }
+function aiSetModel(m) { try { localStorage.setItem(AI_MODEL_LS, m); } catch (e) {} }
+
+async function aiCheckSentence(word, sentence) {
+  const key = aiGetKey();
+  if (!key) return null;                       /* 没 Key → 静默跳过 */
+  const prompt =
+    '你是亲切的小学英语老师。一个中国孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
+    '你要做两件事：\n\n' +
+    '【一】判断这句话**意思通不通、搭配对不对**\n' +
+    '  · 意思荒谬算不通（如 "I eat a book every day."）；搭配错算错（如 open the light 应为 turn on the light）。\n' +
+    '  · ⚠️ 语序/副词位置只要可接受、用词是否「最自然」、风格、大小写标点、句子简单幼稚——一律判 ok:true。\n' +
+    '  · ⚠️ 拿不准或只是「可以更好」时一律 ok:true。把孩子本来对的句子判成错，' +
+    '会让他把对的当错的记住，比漏掉一个错更糟。\n' +
+    '  · 若真的不通，fix 给**改好的完整句子**（尽量保留孩子原来想表达的意思，只改错的地方）。\n\n' +
+    '【二】⭐ 最重要：**同样这个意思、同样这个场合，英语母语者平常会怎么说**\n' +
+    '  · 请**照着孩子这一句的意思去改写**，不要另起炉灶讲别的事。\n' +
+    '  · 必须仍然用上这个单词，长度和难度和孩子那句差不多（小学程度，别用生僻词）。\n' +
+    '  · 写进 better，中文翻译写进 betterZh。\n' +
+    '  · 再用一句简体中文说清楚**差在哪里**（哪个词换了／语序变了／换了个更常用的搭配），写进 diff，' +
+    '30 字内，说人话。如果孩子那句已经很地道，diff 就写「你这句已经很地道了」。\n\n' +
+    '只输出 JSON：{"ok":true或false,"tip":"一句简体中文说明，30字内","fix":"若不通，给改好的完整句子；通顺则留空",' +
+    '"better":"母语者在同样场合会说的一句（仍用这个单词）","betterZh":"better 的中文翻译","diff":"差在哪里，30字内"}\n\n' +
+    '指定单词：' + word + '\n孩子的句子：' + sentence;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);   /* 12 秒还没回就放弃，别让孩子干等 */
+  try {
+    const resp = await fetch(AI_ENDPOINT, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: aiGetModel(), temperature: 0.2, max_tokens: 400,
+                             response_format: { type: 'json_object' },
+                             messages: [{ role: 'user', content: prompt }] })
+    });
+    clearTimeout(timer);
+    if (resp.status === 401) return { error: 'Key 无效或已过期，请在设置里重新填写' };
+    if (!resp.ok) return { error: '智谱返回 ' + resp.status + '，这次跳过 AI 检查' };
+    const j = await resp.json();
+    let t = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    t = t.replace(/^```json\s*|^```\s*|```$/gm, '').trim();
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) t = t.slice(a, b + 1);
+    const r = JSON.parse(t);
+    if (typeof r.ok !== 'boolean') return { error: 'AI 返回格式不对，这次跳过' };
+    /* ⭐ 安全网：AI 给的句子（改好的 fix、母语者说法 better）先过我自己的语法检查器。
+       AI 会犯错，孩子看不出来——与其让他学到一句错的，不如这次不显示。
+       规则层是确定性的、测过的，用它给 AI 的输出把关，比信任 AI 可靠。 */
+    const clean = v => {
+      const t2 = String(v || '').trim();
+      if (!t2) return '';
+      /* 三层挡：① 程序清洗——语法检查器过一遍，有错就丢
+                 ② 聚焦二次核对——必须仍然用上这个单词，跑题的建议对这一关没用
+                 ③ 程序化保底——见下面 makeCheck：判分一律以规则层为准，不让孩子裁决 AI */
+      if (checkGrammar(t2).filter(x => x.level === 'error').length) return '';
+      if (!hasWord(t2, word)) return '';
+      if (collocHits(t2).length || senseHits(t2).length) return '';   /* AI 自己说了句中式英语／说不通的话 */
+      return t2;
+    };
+    const fixOk = clean(r.fix), betterOk = clean(r.better);
+    const dropped = (r.fix && !fixOk) || (r.better && !betterOk);
+    return { ok: r.ok, tip: String(r.tip || ''), fix: fixOk,
+             better: betterOk, betterZh: betterOk ? String(r.betterZh || '') : '',
+             diff: betterOk ? String(r.diff || '') : '', dropped: dropped };
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: e.name === 'AbortError' ? 'AI 检查超时了，这次跳过' : '连不上智谱，这次跳过' };
+  }
+}
+
+/* 家长设置面板：填 Key / 换模型 / 清除 */
+function openSettings() {
+  const has = !!aiGetKey();
+  $('#view').innerHTML =
+    '<div class="stage"><div style="font-size:17px;font-weight:600;margin-bottom:6px">⚙️ 家长设置 · AI 检查</div>' +
+    '<div class="hint-box">造句这一关<b>本来就会自己判分</b>（免费、不需要联网设置），而且是三层：' +
+    '<b>①语法 ②意思说不通（吃书、喝桌子这类查表能确定的）③中式说法</b>（23 条搭配表，还会直接改好整句）。<br>' +
+    '这三层<b>凡是能百分之百确定的，一律不调 AI</b>——结论来自测过的规则，比概率模型可靠。<br>' +
+    '这里填的 AI 只补最后一小块：三层都没话说时，看一眼<b>意思通不通、有没有更地道的说法</b>' +
+    '（例如「I fly this excuse to school.」这种语法对、搭配表里也没有的怪句）。<br>' +
+    '<b>不填照样能用</b>，只是那一小块查不出来。</div>' +
+    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">智谱 API Key' +
+      (has ? '　<span style="color:#3e8e5a;font-size:13px">（已设置 ✓）</span>' : '') + '</div>' +
+    '<input class="inp" id="aiKeyIn" type="password" autocomplete="off" placeholder="' +
+      (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
+    '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
+    '<div style="font-size:13px;color:#8a7fa8;margin-bottom:6px">' +
+    'glm-4.7-flash 是智谱目前免费的主力模型（30B），第一册这种小学程度的句子够用。' +
+    '想更稳可以换成按量计费的 glm-4-plus。<br>' +
+    '⚠️ 不管用哪个，<b>AI 给的示范句都会先过一遍本地语法检查</b>，没通过就不显示给孩子。</div>' +
+    '<select class="inp" id="aiModelIn">' +
+      '<option value="glm-4.7-flash">glm-4.7-flash（免费 · 30B · 推荐）</option>' +
+      '<option value="glm-4-flash-250414">glm-4-flash-250414（免费 · 更轻）</option>' +
+      '<option value="glm-4-plus">glm-4-plus（按量计费 · 最准）</option></select>' +
+    '<div class="hint-box" style="margin-top:14px">🔒 Key 只存在<b>这台设备的浏览器里</b>，' +
+    '不会进代码、不会上传到 GitHub，只会发给智谱本身。换设备要重新填。<br>' +
+    '⚠️ 同一台设备上任何人都能在设置里看到它，孩子的设备请用<b>额度有限的 Key</b>。</div>' +
+    '<button class="btn btn-main" onclick="saveSettings()">保存</button>' +
+    (has ? '<button class="btn btn-ghost" onclick="clearKey()">清除 Key</button>' : '') +
+    '<button class="btn btn-ghost" onclick="renderHome()">返回</button>' +
+    '<div id="setFb"></div></div>';
+  const sel = $('#aiModelIn'); if (sel) sel.value = aiGetModel();
+}
+function saveSettings() {
+  const k = ($('#aiKeyIn') || {}).value || '';
+  if (k.trim()) aiSetKey(k);
+  aiSetModel(($('#aiModelIn') || {}).value || 'glm-4.7-flash');
+  $('#setFb').innerHTML = '<div class="fb ok">已保存。造句时会在语法检查之后再做一次 AI 检查。</div>';
+}
+function clearKey() { aiSetKey(''); openSettings(); }
+
+function collocHtml(s) {
+  const hits = collocHits(s);
+  if (!hits.length) return '';
+  return '<div class="fb tip" style="margin-top:10px">🌟 <b>这句里有中式英语的说法</b>' +
+    hits.map(h => '<div style="margin-top:8px;font-size:14px">' +
+      '<span style="color:#c0392b">✗ 你写的「' + esc(hitText(h, s)) + '」</span>　→　' +
+      '<b style="color:#3e8e5a">✓ ' + esc(h.good) + '</b>' +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(h.good.split(' / ')[0]) + ')">🔊</button>' +
+      '<div style="color:#8a7fa8;font-size:13px;margin-top:3px">' + esc(h.zh) + '</div></div>').join('') +
+    '</div>';
+}
+/* 从这个词的课本例句里挑一句和孩子那句最接近的：课本例句是母语者写的、
+   而且建置时全部过了检查器，所以「没有 AI Key 也一定有一句地道的可给」。 */
+const EG_STOP = new Set(['a','an','the','is','are','am','was','were','i','you','he','she','it','we','they',
+  'my','your','his','her','its','our','their','me','him','them','to','of','in','on','at','and','or','but',
+  'this','that','these','those','do','does','did','not','very','with','for','have','has','had']);
+function closestEg(w, s) {
+  const toks = t => new Set(String(t).toLowerCase().match(/[a-z']+/g) || []);
+  const mine = toks(s); mine.delete(String(w.w).toLowerCase());
+  let best = w.egs[0], score = -1;
+  w.egs.forEach(e => {
+    let n = 0;
+    toks(e).forEach(t => { if (t !== String(w.w).toLowerCase() && !EG_STOP.has(t) && mine.has(t)) n++; });
+    if (n > score) { score = n; best = e; }
+  });
+  return best;
+}
+function bookEgHtml(w, s) {
+  const e = closestEg(w, s);
+  return '<div class="fb tip" style="margin-top:10px">📗 <b>同样用「' + esc(w.w) + '」，母语者会这样说</b>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(e) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(e) + ')">🔊</button></div>' +
+    '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">这是课本里的原句，照着它的句型换成你自己的事，就是地道的说法。</div></div>';
+}
+/* 造句写错时给的一整套地道说法（不需要 AI，一定给得出） */
+function nativeSuggest(w, s) { const nb = nativeBlock(w); return collocHtml(s) + (nb || bookEgHtml(w, s)); }
+/* AI 给的「照着孩子那句改写成母语者的说法」——写对写错都会给 */
+function betterHtml(r) {
+  if (!r || !r.better) return '';
+  return '<div style="margin-top:10px;font-size:14px">🌟 <b>同样的意思，欧美人平常会这样说</b>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(r.better) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(r.better) + ')">🔊</button>' +
+      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
+    '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
+    '</div>';
+}
+
+/* 「欧美人常这样说」——孩子造完句之后给他看地道说法。
+   规则层判语法、这一块给用法：同一个词，母语者习惯用哪个句型、搭配什么词。
+   有 AI Key 时还会针对孩子那一句再给一条量身的。 */
+function nativeBlock(w) {
+  const n = w.native; if (!n) return '';
+  return '<div class="fb tip" style="margin-top:10px">🌟 <b>欧美人常这样用「' + esc(w.w) + '」</b>' +
+    '<div style="margin-top:6px;font-size:14px">常用句型：<b>' + esc(n.pat) + '</b></div>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(n.eg) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(n.eg) + ')">🔊</button>' +
+      '<br><span style="color:#8a7fa8;font-size:13px">' + esc(n.zh) + '</span></div>' +
+    (n.note ? '<div style="margin-top:6px;font-size:13.5px">💡 ' + esc(n.note) + '</div>' : '') +
+    '</div>';
+}
 function spellDiff(user, right) {
   const a = String(user || '').toLowerCase(), b = String(right || '').toLowerCase();
   if (!a) return '<span style="color:#3e8e5a">' + esc(right) + '</span>';
@@ -1354,12 +1388,18 @@ async function makeCheck() {
       '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterBlk + dropNote + '</div>' +
       acceptBtn;
   } else {
+    /* ⭐ 程序化保底：判分永远以规则层为准。AI 说「意思怪」只降级成一条提醒——
+       绝不能变成「你自己判断 AI 说得对不对」，那是把校验推给一个没有判断能力的孩子。 */
     $('#mkFb').innerHTML = gramOkHtml + natHtml +
-      '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
-        (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
-        betterBlk + dropNote + '</div>' +
-      '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
-      '<button class="btn btn-ghost" onclick="makeAccept()">我觉得这句没问题，收下</button>';
+      '<div class="fb tip">🤔 <b>AI 老师另外提了一句</b>' + (r.tip ? '：' + esc(r.tip) : '') +
+        (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">它建议说：' + esc(r.fix) + '</div>' : '') +
+        betterBlk + dropNote +
+        '<div style="margin-top:8px;font-size:13px;color:#8a7fa8">这条只是<b>参考</b>，AI 有时会看错。' +
+        '语法、常见中式说法、意思说不通的搭配，系统都已经查过了，<b>你这句是通过的</b> ✅<br>' +
+        '觉得它说得有道理就改一改，不然直接收下就行 —— 不用你来判断谁对。</div>' +
+      '</div>' +
+      '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>' +
+      '<button class="btn btn-ghost" onclick="makeCheck()">我想改一改，再检查一次</button>';
   }
 }
 function makePass(ok) {

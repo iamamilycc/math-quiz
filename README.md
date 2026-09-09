@@ -48,6 +48,8 @@ python3 build/tests/inject_rules.py     # 故障注入：确认建置规则真�
 python3 build/tests_click.py            # 单词模块真点击走查
 python3 build/tests_ai.py               # AI 第二层（mock 拦 fetch，不需要真 Key）
 python3 build/tests_parity.py           # 建置端与造句端的用词规则必须一致
+python3 build/sync_grammar.py           # 语法引擎同步到精读站（改了 grammar_en.js 就要跑）
+python3 build/tests_parity_grammar.py   # 两个站的判分引擎必须逐字一致
 ```
 
 ## 内容规则（已焊成建置断言，不过就不生成文件）
@@ -83,6 +85,34 @@ python3 build/tests_parity.py           # 建置端与造句端的用词规则�
 
 ⭐ **不能让孩子「改对了才配看母语者怎么说」** —— 他最想知道地道说法的时刻，就是刚写错那一刻。
 所以写错的反馈是三段：**错在哪 → 改好长这样 → 同样的意思欧美人会这样说**。
+
+## ⭐ 铁律：不准把校验推给孩子
+
+用户定的规则（2026-09-09）：**儿童向产品不准把校验推给人**，要用
+「**程序清洗＋聚焦二次核对＋程序化保底**」三层挡住。
+
+「你自己核对一下」「你觉得对吗」「AI 判错了你可以按这里推翻」——这些都等于没判分：
+**他要是能判断，就不用学了。**
+
+| 层 | 在这个项目里是什么 |
+|---|---|
+| ① 程序清洗 | AI 给的示范句先过语法检查器，有错就丢，不显示 |
+| ② 聚焦二次核对 | AI 的建议必须仍然用上这个单词（跑题的建议直接丢）；全册 1803 例句脱离情境逐条喂给检查器 |
+| ③ 程序化保底 | 判分一律以规则层为准；AI 说「意思怪」只降级成参考提醒，不阻断、不要孩子裁决 |
+
+体检规则 `KID001`（P0）会扫出「把对错丢回给使用者」的措辞。
+⚠️ 写说明文档时也要避开这些字面（`不会反过来问你「你觉得对吗」` 这种否定句也会被字面命中）。
+
+## 判分引擎是两个站共用的单一事实源
+
+`build/grammar_en.js` —— 测验站 build 时 inline 进 `words.html`，精读站由
+`build/sync_grammar.py` 生成 `jingdu/assets/grammar-en.js`（IIFE + `window.GrammarEN`）。
+
+同一句话在测验站被判错、在精读站被判对，孩子就不知道该信谁 ——
+所以 `tests_parity_grammar.py` 断言两边引擎正文 **sha256 逐字相同**，精读站那份手改就会被挡下。
+
+改判分规则的流程：改 `build/grammar_en.js` → `python3 build/build_words.py` →
+`python3 build/sync_grammar.py` → 两边测试全跑。
 
 ## ⭐ 判分分层：能百分之百确定的，一律不调 AI
 
@@ -160,13 +190,13 @@ python3 build/tests_parity.py           # 建置端与造句端的用词规则�
 | `ARCH001` words.html 916 行超过 800 | **接受**。自包含单页应用，分了「基础／语法检查器／AI 层／路由／三种练法」五区，改哪块很清楚。语法检查器（约 280 行）将来若要给别的项目复用，再抽成 `assets/grammar-en.js`。 |
 | `BAK001` 找不到备份脚本 | **不适用**。内容全是纯文本 `build/*.py`，git + GitHub 就是备份，生成物随时可重建。 |
 | `SET001` 有上传缺导出 | **误报**。错题本有「📋 复制错题清单」导出。 |
-| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，12 支覆盖到位。 |
+| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，13 支覆盖到位。 |
 | `DOC002` 找不到教程档 | **本文件就是**。体检只认特定文件名。 |
 
 ## 自查清单（每次改完照着走）
 
 1. `python3 build/build_words.py` —— 体检不过就不生成文件
-2. 12 支测试全绿（见上面「一次改完要跑的全套」）
+2. 13 支测试全绿（见上面「一次改完要跑的全套」）
 3. `python3 scripts/project_audit.py .` —— **P0 必须为 0**
 4. 真点击走查一遍（`tests_click.py` 已覆盖，改了 UI 要人工再点一次）
 5. `git push` 之后 **curl 线上地址断言到新内容** —— 本机绿 ≠ 孩子能用

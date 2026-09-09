@@ -11,8 +11,10 @@ const dataM = src.match(/const DATA = ([\s\S]*?);\n/);
 const chkM  = src.match(/\/\* ========== 英语句子语法检查器[\s\S]*?(?=\/\* ========== 路由)/);
 if (!dataM || !chkM) { console.log('❌ 抽不出 DATA 或检查器'); process.exit(1); }
 const sandbox = { DATA: eval('(' + dataM[1] + ')') };
-const fn = new Function('DATA', chkM[0] + '\nreturn checkGrammar;');
-const checkGrammar = fn(sandbox.DATA);
+const fn = new Function('DATA', 'const esc = x => x, speak = () => {};\nconst GRAMMAR_WORDS = DATA.units.reduce((a,u)=>a.concat(u.sections.reduce((b,x)=>b.concat(x.words.map(w=>({w:w.w,pos:w.pos}))),[])),[]);\n' + chkM[0] +
+  '\nreturn {checkGrammar, collocHits, senseHits};');
+const _api = fn(sandbox.DATA);
+const checkGrammar = _api.checkGrammar;
 
 const ERR = [
   ['Excuse me, where is you book?',      '物主代词'],
@@ -125,6 +127,24 @@ sandbox.DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
 const nEg = sandbox.DATA.units.reduce((a,u)=>a+u.sections.reduce((b,x)=>b+x.words.length*3,0),0);
 console.log('  ' + (nEg - egBad) + '/' + nEg + ' 例句通过检查器');
 fails += egBad;
+
+// native 常用句型里的例句也是给孩子看的内容，同样不能只靠人写对
+console.log('--- native 常用句型的例句自检（这些也是孩子会照着学的句子）---');
+let natBad = 0, natN = 0;
+sandbox.DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+  if (!w.native || !w.native.eg) return;
+  natN++;
+  const e = errs(w.native.eg);
+  const c = _api.collocHits(w.native.eg), se = _api.senseHits(w.native.eg);
+  if (e.length || c.length || se.length) {
+    console.log('  ❌ ' + w.w + '：' + w.native.eg + ' → ' +
+      e.map(y => y.why.replace(/<[^>]+>/g, '')).concat(c.map(y => '中式：' + y.good))
+       .concat(se.map(y => y.why)).join('；'));
+    natBad++;
+  }
+})));
+console.log('  ' + (natN - natBad) + '/' + natN + ' 条 native 例句通过语法／中式说法／语义三关');
+fails += natBad;
 
 // 检查器必须真的接进了造句流程
 const wired = /const issues = checkGrammar\(s\)/.test(src) && /检查通过/.test(src);

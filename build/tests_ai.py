@@ -94,9 +94,20 @@ def main():
             # 句子必须用上当前生词（excuse），否则被硬检查提前挡下、走不到 AI
             t = try_sent('I eat this excuse every day.')
             ck('语法层仍判通过（这句语法确实没错）', '语法检查通过' in t, t[-300:])
-            ck('AI 指出意思有问题', '意思上有问题' in t and '书不能吃' in t, t[-300:])
-            ck('给出修正句', 'I read a book every day.' in t, t[-300:])
-            ck('留了人工否决的出口', '我觉得这句没问题' in t, t[-200:])
+            ck('AI 的话降级成「另外提了一句」', 'AI 老师另外提了一句' in t and '书不能吃' in t, t[-400:])
+            # ⭐ 儿童向产品不准把校验推给孩子：不能出现「你自己判断 AI 说得对不对」
+            ck('不要孩子裁决 AI', '我觉得这句没问题' not in t, t[-300:])
+            ck('明确告诉孩子系统判他通过', '你这句是通过的' in t, t[-400:])
+            ck('主按钮仍是「收下」，不卡住', '收下这一句' in t, t[-200:])
+            # ⭐ 聚焦二次核对：AI 的建议句跑题了（没用上 excuse）→ 直接丢弃，不给孩子看
+            ck('跑题的 AI 建议被丢弃', 'I read a book every day.' not in t, t[-300:])
+
+            # 同样的场景，AI 这次给的建议句用上了这个词 → 才显示
+            go_make()
+            pg.evaluate(MOCK, [{"ok": False, "tip": "借口不能吃", "fix": "I make this excuse every day.",
+                                "better": "I always use this excuse.", "betterZh": "我总是用这个借口。"}, 200])
+            t = try_sent('I eat this excuse every day.')
+            ck('用上了这个词的建议句才显示', 'I make this excuse every day.' in t, t[-400:])
 
             # ---- ③ AI 挂了不能挡路 ----
             go_make()

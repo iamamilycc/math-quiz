@@ -8,7 +8,7 @@ const chk  = src.match(/\/\* ========== 英语句子语法检查器[\s\S]*?(?=\/
 const fix  = src.match(/\/\* 把检查器查到的错自动改好[\s\S]*?\n\}/);
 const ns   = src.match(/function normSent\(s\) \{[\s\S]*?\n\}/);
 if (!data || !chk || !fix || !ns) { console.log('❌ 抽不出检查器或 autoFix'); process.exit(1); }
-const api = new Function('DATA', chk[0] + '\n' + fix[0] + '\n' + ns[0] +
+const api = new Function('DATA', 'const GRAMMAR_WORDS = DATA.units.reduce((a,u)=>a.concat(u.sections.reduce((b,x)=>b.concat(x.words.map(w=>({w:w.w,pos:w.pos}))),[])),[]);\n' + chk[0] + '\n' + fix[0] + '\n' + ns[0] +
                          '\nreturn {checkGrammar, autoFix};')(eval('(' + data[1] + ')'));
 
 const CASES = [

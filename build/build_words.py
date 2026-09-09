@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 功能：把 words_data.py 的 DATA 注入 words_template.html，产出 words.html
-输入：build/words_data.py, build/words_template.html
+输入：build/words_data.py, build/words_template.html, build/grammar_en.js（共用语法引擎）
 输出：words.html（部署目录根下）
 用法：python3 build/build_words.py
 校验：注入前先跑 validate()，任何一条不通过就中止，不写文件
@@ -212,8 +212,11 @@ def main():
 
     tpl = open(os.path.join(HERE, 'words_template.html'), encoding='utf-8').read()
     assert tpl.count('/*__DATA__*/') == 1, '模板占位符缺失或重复'
+    assert tpl.count('/*__GRAMMAR_EN__*/') == 1, '语法引擎占位符缺失或重复'
     js = json.dumps(DATA, ensure_ascii=False).replace('</', '<\\/')
-    out = tpl.replace('/*__DATA__*/', js)
+    # 语法引擎是两个站共用的单一事实源，这里 inline 进来保持单页自包含
+    engine = open(os.path.join(HERE, 'grammar_en.js'), encoding='utf-8').read()
+    out = tpl.replace('/*__DATA__*/', js).replace('/*__GRAMMAR_EN__*/', engine)
     path = os.path.join(ROOT, 'words.html')
     open(path, 'w', encoding='utf-8').write(out)
 

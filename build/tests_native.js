@@ -7,10 +7,10 @@ const fs = require('fs');
 const src = fs.readFileSync('words.html', 'utf8');
 const dataM = src.match(/const DATA = ([\s\S]*?);\n/);
 // 连语法检查器一起抽出来：fix() 改好的句子必须自己也能过语法检查
-const blkM  = src.match(/\/\* ========== 英语句子语法检查器[\s\S]*?(?=\/\* 把检查器)/);
+const blkM  = src.match(/\/\* ========== 英语句子语法检查器[\s\S]*?(?=\/\* ========== 路由)/);
 if (!dataM || !blkM) { console.log('❌ 抽不出 DATA 或搭配表'); process.exit(1); }
 const DATA = eval('(' + dataM[1] + ')');
-const api = new Function('DATA', 'const esc = x => x, speak = () => {};\n' + blkM[0] +
+const api = new Function('DATA', 'const esc = x => x, speak = () => {};\nconst GRAMMAR_WORDS = DATA.units.reduce((a,u)=>a.concat(u.sections.reduce((b,x)=>b.concat(x.words.map(w=>({w:w.w,pos:w.pos}))),[])),[]);\n' + blkM[0] +
   '\nreturn {COLLOC, collocHits, collocFix, senseHits, closestEg, nativeSuggest, bookEgHtml, checkGrammar};')(DATA);
 const gErr = t => api.checkGrammar(t).filter(x => x.level === 'error');
 let fails = 0;
