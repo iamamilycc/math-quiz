@@ -127,6 +127,29 @@ def main():
             ck('清除 Key 后不再调 AI', pg.evaluate("window.__aiCalls") == 0)
             ck('清除 Key 后照常通过', '语法检查通过' in t and '收下这一句' in t, t[-200:])
 
+            # ---- ⑦ AI 给出语法有错的句子 → 必须拦下，不能给孩子看 ----
+            pg.evaluate("aiSetKey('k'); renderHome(); openUnit(0); openSec(0); openMode('make')")
+            pg.wait_for_timeout(250)
+            pg.evaluate(MOCK, [{"ok": True, "tip": "很好",
+                                "better": "He like this excuse very much.",   # 三单漏 s，故意写错
+                                "betterZh": "他很喜欢这个借口。", "diff": "换了说法"}, 200])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('AI 给的错句被拦下不显示', 'He like this excuse' not in t, t[-400:])
+            ck('拦下时告诉用户原因', '没通过语法检查' in t, t[-300:])
+            ck('语法结论仍然有效', '语法检查通过' in t, t[-400:])
+
+            # ---- ⑧ AI 给出正确的句子 → 正常显示 ----
+            pg.evaluate("renderHome(); openUnit(0); openSec(0); openMode('make')"); pg.wait_for_timeout(250)
+            pg.evaluate(MOCK, [{"ok": True, "tip": "很好",
+                                "better": "Excuse me, could you give me a hand?",
+                                "betterZh": "打扰一下，能帮我个忙吗？", "diff": "换成更常用的说法"}, 200])
+            t = try_sent('Excuse me, can you help me now?')
+            ck('AI 给的正确句正常显示', 'give me a hand' in t, t[-300:])
+            ck('正确时不出现拦截提示', '没通过语法检查' not in t, t[-300:])
+
+            ck('默认模型是当前免费的 glm-4.7-flash',
+               pg.evaluate("(()=>{localStorage.removeItem('mathquiz_zhipu_model');return aiGetModel();})()") == 'glm-4.7-flash')
+
             ck('全程无 JS 错误', not errs, errs[:2])
             b.close()
     finally:

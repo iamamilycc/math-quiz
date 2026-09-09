@@ -554,7 +554,7 @@ function aiGetKey() { try { return localStorage.getItem(AI_KEY_LS) || ''; } catc
 function aiSetKey(k) {
   try { if (k && k.trim()) localStorage.setItem(AI_KEY_LS, k.trim()); else localStorage.removeItem(AI_KEY_LS); } catch (e) {}
 }
-function aiGetModel() { try { return localStorage.getItem(AI_MODEL_LS) || 'glm-4-flash'; } catch (e) { return 'glm-4-flash'; } }
+function aiGetModel() { try { return localStorage.getItem(AI_MODEL_LS) || 'glm-4.7-flash'; } catch (e) { return 'glm-4.7-flash'; } }
 function aiSetModel(m) { try { localStorage.setItem(AI_MODEL_LS, m); } catch (e) {} }
 
 async function aiCheckSentence(word, sentence) {
@@ -598,9 +598,20 @@ async function aiCheckSentence(word, sentence) {
     if (a >= 0 && b > a) t = t.slice(a, b + 1);
     const r = JSON.parse(t);
     if (typeof r.ok !== 'boolean') return { error: 'AI 返回格式不对，这次跳过' };
-    return { ok: r.ok, tip: String(r.tip || ''), fix: String(r.fix || ''),
-             better: String(r.better || ''), betterZh: String(r.betterZh || ''),
-             diff: String(r.diff || '') };
+    /* ⭐ 安全网：AI 给的句子（改好的 fix、母语者说法 better）先过我自己的语法检查器。
+       AI 会犯错，孩子看不出来——与其让他学到一句错的，不如这次不显示。
+       规则层是确定性的、测过的，用它给 AI 的输出把关，比信任 AI 可靠。 */
+    const clean = v => {
+      const t2 = String(v || '').trim();
+      if (!t2) return '';
+      const bad = checkGrammar(t2).filter(x => x.level === 'error');
+      return bad.length ? '' : t2;
+    };
+    const fixOk = clean(r.fix), betterOk = clean(r.better);
+    const dropped = (r.fix && !fixOk) || (r.better && !betterOk);
+    return { ok: r.ok, tip: String(r.tip || ''), fix: fixOk,
+             better: betterOk, betterZh: betterOk ? String(r.betterZh || '') : '',
+             diff: betterOk ? String(r.diff || '') : '', dropped: dropped };
   } catch (e) {
     clearTimeout(timer);
     return { error: e.name === 'AbortError' ? 'AI 检查超时了，这次跳过' : '连不上智谱，这次跳过' };
@@ -620,9 +631,14 @@ function openSettings() {
     '<input class="inp" id="aiKeyIn" type="password" autocomplete="off" placeholder="' +
       (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
     '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
+    '<div style="font-size:13px;color:#8a7fa8;margin-bottom:6px">' +
+    'glm-4.7-flash 是智谱目前免费的主力模型（30B），第一册这种小学程度的句子够用。' +
+    '想更稳可以换成按量计费的 glm-4-plus。<br>' +
+    '⚠️ 不管用哪个，<b>AI 给的示范句都会先过一遍本地语法检查</b>，没通过就不显示给孩子。</div>' +
     '<select class="inp" id="aiModelIn">' +
-      '<option value="glm-4-flash">glm-4-flash（免费，够用）</option>' +
-      '<option value="glm-4-plus">glm-4-plus（更准，按量计费）</option></select>' +
+      '<option value="glm-4.7-flash">glm-4.7-flash（免费 · 30B · 推荐）</option>' +
+      '<option value="glm-4-flash-250414">glm-4-flash-250414（免费 · 更轻）</option>' +
+      '<option value="glm-4-plus">glm-4-plus（按量计费 · 最准）</option></select>' +
     '<div class="hint-box" style="margin-top:14px">🔒 Key 只存在<b>这台设备的浏览器里</b>，' +
     '不会进代码、不会上传到 GitHub，只会发给智谱本身。换设备要重新填。<br>' +
     '⚠️ 同一台设备上任何人都能在设置里看到它，孩子的设备请用<b>额度有限的 Key</b>。</div>' +
@@ -635,7 +651,7 @@ function openSettings() {
 function saveSettings() {
   const k = ($('#aiKeyIn') || {}).value || '';
   if (k.trim()) aiSetKey(k);
-  aiSetModel(($('#aiModelIn') || {}).value || 'glm-4-flash');
+  aiSetModel(($('#aiModelIn') || {}).value || 'glm-4.7-flash');
   $('#setFb').innerHTML = '<div class="fb ok">已保存。造句时会在语法检查之后再做一次 AI 检查。</div>';
 }
 function clearKey() { aiSetKey(''); openSettings(); }
@@ -1013,15 +1029,18 @@ async function makeCheck() {
       (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
     '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
     '</div>' : '';
+  const dropNote = r.dropped ?
+    '<div style="margin-top:8px;font-size:13px;color:#8a7fa8">（AI 这次给的示范句没通过语法检查，' +
+    '已经拦下不显示——宁可少给一句，也不让你记住错的说法。）</div>' : '';
   if (r.ok) {
     $('#mkFb').innerHTML = passHtml + natHtml +
-      '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterHtml + '</div>' +
+      '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterHtml + dropNote + '</div>' +
       acceptBtn;
   } else {
     $('#mkFb').innerHTML = passHtml + natHtml +
       '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
         (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
-        betterHtml + '</div>' +
+        betterHtml + dropNote + '</div>' +
       '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
       '<button class="btn btn-ghost" onclick="makeAccept()">我觉得这句没问题，收下</button>';
   }
