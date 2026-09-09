@@ -225,6 +225,29 @@ const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information'
 const PUNCTUAL = { join: 'be in', buy: 'have', die: 'be dead', come: 'be here', go: 'be away',
   arrive: 'be here', begin: 'be on', start: 'be on', finish: 'be over', leave: 'be away',
   borrow: 'keep', marry: 'be married', open: 'be open', close: 'be closed', get: 'have' };
+/* ⭐ 英式 → 美式拼写对照。NCE1 是英式教材，词表收的是 colour / favourite / grey，
+   但孩子在别处学的可能是美式。**他没有拼错**，判他错会让他以为 color 是错的（更糟）。
+   正确做法：算对，同时告诉他这是美式拼法、本书用英式。 */
+const BR_US = { colour:'color', favourite:'favorite', grey:'gray', neighbour:'neighbor',
+  centre:'center', theatre:'theater', metre:'meter', litre:'liter', honour:'honor',
+  labour:'labor', humour:'humor', practise:'practice', realise:'realize', recognise:'recognize',
+  organise:'organize', apologise:'apologize', travelled:'traveled', travelling:'traveling',
+  cancelled:'canceled', jewellery:'jewelry', pyjamas:'pajamas', tyre:'tire', plough:'plow',
+  cheque:'check', aeroplane:'airplane', programme:'program', defence:'defense', licence:'license' };
+/* 英式用词 → 美式用词（不是拼写差异，是换了一个词，提示措辞要不一样） */
+const BR_US_WORD = { mum:'mom', lorry:'truck', biscuit:'cookie', flat:'apartment',
+  lift:'elevator', rubber:'eraser', football:'soccer', autumn:'fall', holiday:'vacation',
+  postman:'mailman', chemist:'drugstore', petrol:'gas', queue:'line', torch:'flashlight' };
+/* 使用者写的是不是「同一个词的美式版」？是的话回传提示文案，不是回传空字串。 */
+function usSpellingOf(answer, typed) {
+  const a = String(answer || '').toLowerCase().trim(), t = String(typed || '').toLowerCase().trim();
+  if (!a || !t || a === t) return '';
+  if (BR_US[a] === t) return '你写的 <b>' + t + '</b> 是<b>美式拼法</b>，也是对的 👍 ' +
+    '不过这本书（新概念）是<b>英式</b>教材，考试和课文里用 <b>' + a + '</b>。';
+  if (BR_US_WORD[a] === t) return '你写的 <b>' + t + '</b> 是<b>美式说法</b>，意思一样 👍 ' +
+    '英式（这本书）说 <b>' + a + '</b>，两个都要认得。';
+  return '';
+}
 /* 句首疑问词：这类句子是倒装的，be 后面跟的是主语不是动词 */
 const WH_START = new Set(['what','how','where','when','who','whom','which','why','whose']);
 /* 疑问词：出现在句中（宾语从句）时后面要用陈述语序 */
@@ -281,7 +304,7 @@ function tokenize(s) {
 function punctFlags(s) {
   const parts = fixApos(s).trim().split(/\s+/).filter(Boolean);
   const flags = [];
-  parts.forEach(p => { if (p.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '')) flags.push(/[,;:.!?—-]$/.test(p)); });
+  parts.forEach(p => { if (p.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '')) flags.push(/[,;:.!?—\-，；：。！？]$/.test(p)); });
   return flags;
 }
 function lower(a) { return a.map(x => x.toLowerCase()); }
@@ -297,7 +320,15 @@ function checkGrammar(sent) {
   /* R1 句首大写 */
   if (!/^[A-Z]/.test(raw)) add('error', '句子开头没有大写', '英文句子第一个字母要大写：把「' + raw.charAt(0) + '」改成大写');
   /* R2 句尾标点 */
-  if (!/[.!?]$/.test(raw)) add('error', '句子末尾少了标点', '陈述句结尾加句号 <b>.</b>，问句用 <b>?</b>，感叹用 <b>!</b>');
+  /* ⚠️ 中文输入法打出来的是全角「。！？」——孩子眼里明明打了句号，系统却说「少了标点」，
+     他会完全不知道问题在哪。所以：全角算有标点（不判错），但提醒他英文要用半角。 */
+  if (!/[.!?]$/.test(raw)) {
+    if (/[。．！？]$/.test(raw))
+      add('warn', '句尾用的是<b>中文标点</b>「' + raw.slice(-1) + '」',
+          '英文要用半角：句号 <b>.</b>、问号 <b>?</b>、感叹号 <b>!</b>（把输入法切到英文再打）');
+    else
+      add('error', '句子末尾少了标点', '陈述句结尾加句号 <b>.</b>，问句用 <b>?</b>，感叹用 <b>!</b>');
+  }
 
   for (let i = 0; i < t.length; i++) {
     const w = t[i], nx = t[i + 1], nx2 = t[i + 2];

@@ -124,7 +124,7 @@ function addWrong(word, sec, unit, mode, userAnswer) {
 
 /* 发音（浏览器 TTS，没有就静默） */
 function speak(t) {
-  try { const u = new SpeechSynthesisUtterance(String(t)); u.lang = 'en-US'; u.rate = .9;
+  try { const u = new SpeechSynthesisUtterance(String(t)); u.lang = 'en-GB';   /* 新概念是英式教材，音标也是英式 —— 读音必须跟着英式，否则和音标对不上 */ u.rate = .9;
     speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
 
@@ -156,7 +156,7 @@ async function aiCheckSentence(word, sentence) {
   const key = aiGetKey();
   if (!key) return null;                       /* 没 Key → 静默跳过 */
   const prompt =
-    '你是亲切的小学英语老师。一个中国孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
+    '你是亲切的初中英语老师。一个中国初中生用指定单词造了一个句子。语法已经由程序检查过了，' +
     '你要做两件事：\n\n' +
     '【一】判断这句话**意思通不通、搭配对不对**\n' +
     '  · 意思荒谬算不通（如 "I eat a book every day."）；搭配错算错（如 open the light 应为 turn on the light）。\n' +
@@ -166,7 +166,7 @@ async function aiCheckSentence(word, sentence) {
     '  · 若真的不通，fix 给**改好的完整句子**（尽量保留孩子原来想表达的意思，只改错的地方）。\n\n' +
     '【二】⭐ 最重要：**同样这个意思、同样这个场合，英语母语者平常会怎么说**\n' +
     '  · 请**照着孩子这一句的意思去改写**，不要另起炉灶讲别的事。\n' +
-    '  · 必须仍然用上这个单词，长度和难度和孩子那句差不多（小学程度，别用生僻词）。\n' +
+    '  · 必须仍然用上这个单词，长度和难度和他那句差不多（初中程度：可以用从句和常见短语，别用雅思托福级生僻词）。\n' +
     '  · 写进 better，中文翻译写进 betterZh。\n' +
     '  · 再用一句简体中文说清楚**差在哪里**（哪个词换了／语序变了／换了个更常用的搭配），写进 diff，' +
     '30 字内，说人话。如果孩子那句已经很地道，diff 就写「你这句已经很地道了」。\n\n' +
@@ -235,7 +235,7 @@ function openSettings() {
       (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
     '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
     '<div style="font-size:13px;color:#8a7fa8;margin-bottom:6px">' +
-    'glm-4.7-flash 是智谱目前免费的主力模型（30B），第一册这种小学程度的句子够用。' +
+    'glm-4.7-flash 是智谱目前免费的主力模型（30B），新概念第一册这种初中程度的句子够用。' +
     '想更稳可以换成按量计费的 glm-4-plus。<br>' +
     '⚠️ 不管用哪个，<b>AI 给的示范句都会先过一遍本地语法检查</b>，没通过就不显示给孩子。</div>' +
     '<select class="inp" id="aiModelIn">' +
@@ -457,10 +457,15 @@ function maskWord(sent, w) {
 function cardFlip() { cd.flipped = true; cardRender(); }
 function cardCheck() {
   const w = cur.sec.words[cd.i], v = ($('#cdIn') || {}).value || '';
-  const ok = normalize(v) === normalize(w.w);
+  /* ⚠️ 新概念是英式教材，但学校/别处学的可能是美式拼法。他没有拼错，
+     判他错会让他以为 color 是错的（比不给分更糟）。算对，同时说清差别。 */
+  const usNote = usSpellingOf(w.w, v);
+  const ok = normalize(v) === normalize(w.w) || !!usNote;
   if (ok) cd.ok++; else addWrong(w, cur.sec, cur.unit, 'card', v);
   $('#cdFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
-    (ok ? '🎉 拼对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
+    (ok ? (usNote ? '🎉 拼对了！<div style="margin-top:6px;font-size:13.5px">🇬🇧🇺🇸 ' + usNote + '</div>'
+                    + '<div style="margin-top:6px;font-size:13.5px">' + esc(w.egs[0]) + '</div>'
+                  : '🎉 拼对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 正确拼写是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) +
           '<br>你写的是「' + esc(v || '（空）') + '」' +
           '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
@@ -520,10 +525,13 @@ function recallHint() {
 }
 function recallCheck() {
   const w = cur.sec.words[rc.i], v = ($('#rcIn') || {}).value || '';
-  const ok = normalize(v) === normalize(w.w);
+  const usNote = usSpellingOf(w.w, v);          /* 美式拼法同样算对，见 cardCheck 的说明 */
+  const ok = normalize(v) === normalize(w.w) || !!usNote;
   if (ok) rc.ok++; else addWrong(w, cur.sec, cur.unit, 'recall', v);
   $('#rcFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
-    (ok ? '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
+    (ok ? (usNote ? '🎉 写对了！<div style="margin-top:6px;font-size:13.5px">🇬🇧🇺🇸 ' + usNote + '</div>'
+                    + '<div style="margin-top:6px;font-size:13.5px">' + esc(w.egs[0]) + '</div>'
+                  : '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>你写的是「' + esc(v || '（空）') + '」' +
           '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
           '<br><span style="font-size:12.5px;color:#8a7fa8">' +

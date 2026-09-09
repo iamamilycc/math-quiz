@@ -90,6 +90,16 @@ const ERR = [
 ];
 const OK = [
   // ⭐ 补规则 R20-R29 时，全册例句自检抓到的边界（都必须零误报）
+  // ⭐ 拿精读站雅思题库当新语料扫出来的三类误报（新语料 = 新的误报来源）
+  'How important is sleep to you?',                              // 倒装疑问句：be 后面是主语
+  'What causes youth crime and how can it be addressed?',        // 并列疑问句，不是宾语从句
+  'What problems does this cause and how can they be solved?',
+  'Can it be solved quickly?', 'It must be true.',               // 情态动词后的原形 be
+  'The writer and teacher is here.',                             // 同一个人的两个身份，用 is 对
+  'The writer and the teacher are here.',                        // 这才是两个人
+  "It's Monday.", "It's a nice day today.", "I know it's Monday.",
+  // ⭐ 中文输入法打出的全角标点：不能判成「少了标点」（孩子眼里明明打了句号）
+  'I like this book\u3002', 'What is your name\uff1f', 'How nice it is\uff01',
   'What did you do yesterday?', 'I know what you did.', 'She asked where I lived.',
   'If it rains tomorrow, we will stay home.', 'I do not know if he will come.',
   'Good morning, Miss Green, how are you?', 'Hello, how are you this morning?',

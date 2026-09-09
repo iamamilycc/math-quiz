@@ -20,6 +20,24 @@ ok(Array.isArray(DATA.units) && DATA.units.length > 0, 'DATA 结构正确（含 
   ok(normalize('O\u2019clock') === normalize("o'clock"), "o'clock 大小写+撇号都归一");
 })();
 
+// ⭐ 英美拼写：新概念是英式教材，孩子写美式不该被当成拼错（他没拼错，判错会让他以为 color 是错的）
+(function () {
+  const blk = src.match(/\/\* ⭐ 英式 → 美式拼写对照[\s\S]*?\n\}/);
+  if (!blk) { ok(false, '抽得出英美拼写对照表'); return; }
+  const usSpellingOf = new Function(blk[0] + '\nreturn usSpellingOf;')();
+  ok(!!usSpellingOf('colour', 'color'), 'colour 写成 color 要算对并说明');
+  ok(!!usSpellingOf('mum', 'mom'), 'mum 写成 mom 要算对并说明（用词差异）');
+  ok(!usSpellingOf('colour', 'colur'), '真拼错的仍然判错');
+  ok(!usSpellingOf('book', 'book'), '完全相同不给多余提示');
+  ok(/美式/.test(usSpellingOf('colour', 'color')) && /英式/.test(usSpellingOf('colour', 'color')),
+     '提示里两边口径都说清楚');
+})();
+// ⭐ 判分要真的接上：两个模式都必须用 usSpellingOf，否则表写了也没用
+ok(/const usNote = usSpellingOf\(w\.w, v\);/.test(src) &&
+   (src.match(/usSpellingOf\(w\.w, v\)/g) || []).length >= 2, '记忆卡和背诵两处都接上了英美拼写判定');
+// ⭐ 朗读要用英式（教材和音标都是英式，读美音会对不上）
+ok(/u\.lang = 'en-GB'/.test(src), '朗读用 en-GB（英式教材）');
+
 console.log(`     单元 ${DATA.units.length} / 节 ${DATA.units.reduce((a,u)=>a+u.sections.length,0)} / 单词 ${words.length}`);
 
 // --- 例句规则（和建置校验同一套，双保险）---
