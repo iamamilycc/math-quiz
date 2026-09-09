@@ -157,6 +157,7 @@ const PURE_NOUNS = (() => {
       /* 兼形容词的词不能算「确定是名词」——the right answer 里 right 是形容词，
          把它当主语就会把 answer 误判成动词。 */
       if (String(w.pos).includes('名词') && !String(w.pos).includes('形容词') &&
+          !String(w.pos).includes('副词') &&
           !String(w.pos).includes('动词') && k.indexOf(' ') < 0 && !BASE_VERBS.has(k) &&
           !THIRD_TO_BASE[k] && !PAST_TO_BASE[k]) set.add(k);
     });
@@ -172,11 +173,46 @@ const ALL_NOUNS = (() => {
   try {
     GRAMMAR_WORDS_SAFE.forEach(w => {
       const k = String(w.w).toLowerCase();
-      if (String(w.pos).includes('名词') && k.indexOf(' ') < 0) set.add(k);
+      /* ⚠️ 兼形容词／副词的词不算名词，否则「Are you Chinese?」「What day is it today?」
+         这两句完全正确的话会被判成「要用物主代词」——拿题库 1443 句反扫出来的误报。 */
+      if (String(w.pos).includes('名词') && !String(w.pos).includes('形容词') &&
+          !String(w.pos).includes('副词') && k.indexOf(' ') < 0) set.add(k);
     });
   } catch (e) {}
   return set;
 })();
+/* ⭐ 下面这几张表是拿英语题库的 458 个「整句英文」干扰项反扫出来的**漏报清单**：
+   那些句子确实是错的（题目把它们排除在正确答案外），但检查器原本抓不到。
+   孩子造句时同样会犯，所以补进来。每条都限死词表，宁可漏报不可误报。 */
+/* 只能当宾语的代词，出现在句首当主语就是错的：Me and Tom are friends. */
+const OBJ_PRON = { me: 'I', him: 'he', her: 'she', them: 'they', us: 'we' };
+/* 纯过去分词（和过去式不同形），前面没有 have/has/had/be 就不能单独当谓语：I seen him. */
+const PP_ONLY = { seen: 'saw', gone: 'went', done: 'did', eaten: 'ate', written: 'wrote',
+  broken: 'broke', taken: 'took', given: 'gave', spoken: 'spoke', known: 'knew', drunk: 'drank',
+  ridden: 'rode', risen: 'rose', driven: 'drove', fallen: 'fell', flown: 'flew', grown: 'grew',
+  thrown: 'threw', blown: 'blew', drawn: 'drew', worn: 'wore', torn: 'tore', chosen: 'chose',
+  frozen: 'froze', stolen: 'stole', forgotten: 'forgot', begun: 'began', sung: 'sang', swum: 'swam' };
+/* 职业／身份名词：be 后面是单数职业名词，前面必须有冠词或物主代词：He is teacher. → a teacher */
+const JOB_NOUNS = new Set(['teacher','doctor','student','nurse','driver','engineer','worker','farmer',
+  'policeman','postman','waiter','waitress','singer','writer','painter','actor','actress','manager',
+  'cook','pilot','dentist','lawyer','soldier','boy','girl','man','woman','friend','child','baby']);
+/* 动词后面该用副词却写成形容词：He drives careful. → carefully */
+const ADV_NEEDED = { careful: 'carefully', quick: 'quickly', slow: 'slowly', quiet: 'quietly',
+  loud: 'loudly', bad: 'badly', beautiful: 'beautifully', clear: 'clearly', happy: 'happily',
+  sad: 'sadly', easy: 'easily', angry: 'angrily', polite: 'politely', good: 'well' };
+const ADV_VERBS = new Set(['drive','drives','drove','sing','sings','sang','run','runs','ran',
+  'walk','walks','walked','speak','speaks','spoke','write','writes','wrote','work','works','worked',
+  'play','plays','played','dance','dances','danced','swim','swims','swam','read','reads','draw','draws','drew']);
+/* 不可数名词：There are some bread… 里的 are 是错的 */
+const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information','news','homework',
+  'furniture','luggage','advice','tea','coffee','juice','meat','paper','music','time','work','food',
+  'fruit','sugar','salt','soup','cheese','butter','weather','air','snow','rain','hair','wood','glass']);
+/* 短暂动词：完成时不能跟 for + 一段时间（He has joined the army for three years.） */
+const PUNCTUAL = { join: 'be in', buy: 'have', die: 'be dead', come: 'be here', go: 'be away',
+  arrive: 'be here', begin: 'be on', start: 'be on', finish: 'be over', leave: 'be away',
+  borrow: 'keep', marry: 'be married', open: 'be open', close: 'be closed', get: 'have' };
+/* 疑问词：出现在句中（宾语从句）时后面要用陈述语序 */
+const WH_WORDS = new Set(['what','where','when','who','whom','which','how','why','whose']);
 /* ⚠️ her / his / its 本身就能当物主代词（her coat 是对的），绝不能列进来，
    否则会把正确的句子判成错——这是全册例句自检抓出来的。 */
 /* 不规则复数：the children come… 是对的，不能当成「名词主语漏了 s」 */
@@ -250,8 +286,15 @@ function checkGrammar(sent) {
     if (nx && w === nx && !pf[i] && !['had','that'].includes(w))
       add('error', '「' + w + ' ' + nx + '」写重复了', '删掉多余的那个 <b>' + w + '</b>');
 
-    /* R4 be 动词与主语不一致 */
-    if (nx && BE_ALL.has(nx)) {
+    /* R4 be 动词与主语不一致
+       ⚠️ 三个例外，都是拿题库里 1443 个英文句子反扫出来的误报（误报比漏报更伤）：
+       ① 完成式疑问句：Have you been…? / Has he been…? —— been 前面的 have/has/had 才是谓语
+       ② 复合主语：Tom and I are… / You and he are… —— 主语是两个人，本来就配 are
+       ③ 疑问句倒装：Are you…? / Is he…? —— 这在 R4 之外由句首判断处理 */
+    const prevW = i > 0 ? t[i - 1] : '';
+    const perfectQ = nx === 'been' && ['have','has','had'].includes(prevW);
+    const beCompound = (i >= 1 && t[i - 1] === 'and') || (nx2 === 'and');
+    if (nx && BE_ALL.has(nx) && !perfectQ && !beCompound) {
       if (SUBJ_I.has(w) && !['am','was'].includes(nx))
         add('error', 'I 后面不能用 <b>' + nx + '</b>', 'I 配 <b>am</b>（过去式 was）：I <b>am</b> …');
       if (SUBJ_3S.has(w) && !['is','was'].includes(nx))
@@ -306,7 +349,10 @@ function checkGrammar(sent) {
           '要么去掉 <b>' + w + '</b>，要么把动词改成 ing：' + w + ' <b>' + nx.replace(/e$/, '') + 'ing</b>');
 
     /* R8 a / an 用错（看后面单词的读音） */
-    if (w === 'a' && nx && /^[aeiou]/.test(nx) && !AN_EXCEPT_A.has(nx))
+    /* ⚠️ 「Which is bigger, A or B?」里的 A 是代号不是冠词——用原文大小写判，小写的 a 才是冠词 */
+    const rawTok = (raw.match(/[A-Za-z'’]+/g) || [])[i] || '';
+    const isLetterLabel = /^[A-Z]$/.test(rawTok);
+    if (w === 'a' && !isLetterLabel && nx && /^[aeiou]/.test(nx) && !AN_EXCEPT_A.has(nx))
       add('error', '<b>a ' + nx + '</b> 要改成 <b>an ' + nx + '</b>', nx + ' 读音以元音开头，冠词用 <b>an</b>');
     if (w === 'an' && nx && !/^[aeiou]/.test(nx) && !A_EXCEPT_AN.has(nx))
       add('error', '<b>an ' + nx + '</b> 要改成 <b>a ' + nx + '</b>', nx + ' 读音以辅音开头，冠词用 <b>a</b>');
@@ -389,6 +435,87 @@ function checkGrammar(sent) {
     if (!prevIsAction && PRON_NEEDS_POSS[w] && nx && PURE_NOUNS.has(nx) && !pf[i])
       add('error', '<b>' + w + ' ' + nx + '</b> 不对，这里要用「谁的」',
           '表示「' + w + ' 的 ' + nx + '」要用物主代词：<b>' + PRON_NEEDS_POSS[w] + ' ' + nx + '</b>');
+
+
+
+    /* R26 宾语从句要用陈述语序：I don't know what did you do. → what you did
+       限死：疑问词不在句首（句首是真正的疑问句，语序本来就该倒装）。 */
+    /* ⚠️ 前一个词后面有标点＝这是新的一句（Good morning, how are you? 里的 how 是独立问句），
+       不是宾语从句——全册例句自检抓到的误报。 */
+    /* ⚠️ 介词前置的疑问句是对的：To whom did you give it? / In which box is it? */
+    if (i > 0 && !pf[i - 1] && !PREPS.has(t[i - 1]) &&
+        WH_WORDS.has(w) && nx && (AUX_DO.has(nx) || BE_ALL.has(nx) || MODALS.has(nx)) &&
+        nx2 && (SUBJ_I.has(nx2) || SUBJ_3S.has(nx2) || SUBJ_PL.has(nx2)))
+      add('error', '<b>' + w + '</b> 引导的从句要用陈述语序，不能像问句那样倒装',
+          '把 <b>' + nx + ' ' + nx2 + '</b> 换成 <b>' + nx2 + ' …</b>：… ' + w + ' <b>' + nx2 + '</b> …');
+
+    /* R27 if 条件句里不用 will：If it will rain tomorrow… → If it rains tomorrow…
+       限死：只在句首的 If 报（句中的 if 多半是「是否」，那种可以跟 will）。 */
+    if (i === 0 && w === 'if') {
+      /* ⚠️ 从句到第一个逗号为止——will 在主句里是对的（If it rains, we will stay home.）。
+         tokenize 会去掉标点，所以逗号位置要用 punctFlags 判，不能在 token 里找 ','。 */
+      let end = t.length;
+      for (let k = 0; k < t.length; k++) { if (pf[k]) { end = k + 1; break; } }
+      const clause = t.slice(0, end);
+      const wi = clause.indexOf('will');
+      if (wi > 0)
+        add('error', '<b>if</b> 引导的条件句里不用 <b>will</b>',
+            '条件句用一般现在时表示将来：If it <b>rains</b> tomorrow, we <b>will</b> …（will 留给主句）');
+    }
+
+    /* R28 There is/are + 不可数名词：There are some bread… → There is some bread */
+    if (w === 'there' && nx && BE_ALL.has(nx) && nx2) {
+      const noun = (nx2 === 'some' || nx2 === 'much' || nx2 === 'a' || nx2 === 'any') ? t[i + 3] : nx2;
+      if (noun && UNCOUNTABLE.has(noun) && ['are','were'].includes(nx))
+        add('error', '<b>' + noun + '</b> 是不可数名词，前面要用 <b>' + (nx === 'are' ? 'is' : 'was') + '</b>',
+            '不可数名词当单数看：There <b>' + (nx === 'are' ? 'is' : 'was') + '</b> some ' + noun + ' …');
+    }
+
+    /* R29 短暂动词的完成时 + for 一段时间：He has joined the army for three years. */
+    if (['have','has','had'].includes(w) && nx && PUNCTUAL[PAST_TO_BASE[nx] || nx.replace(/ed$/, '')] &&
+        t.slice(i, i + 8).includes('for')) {
+      const base = PAST_TO_BASE[nx] || nx.replace(/ed$/, '');
+      add('error', '<b>' + base + '</b> 是短暂动词，完成时不能跟 <b>for + 一段时间</b>',
+          '换成表示状态的说法：<b>' + w + ' ' + PUNCTUAL[base] + '</b> … for …');
+    }
+
+    /* R20 宾格代词当主语：Me and Tom are friends. → Tom and I are friends.
+       限死：只在句首（i===0）报，句中的 me/him 都是宾语，正确。 */
+    if (i === 0 && OBJ_PRON[w] && nx && (nx === 'and' || isVerbTok(nx)))
+      add('error', '<b>' + w + '</b> 不能放在句子开头当主语',
+          '当主语要用 <b>' + OBJ_PRON[w] + '</b>（' + w + ' 只能当宾语，放在动词或介词后面）' +
+          (nx === 'and' ? '；而且英语习惯把自己放后面：Tom and <b>I</b>' : ''));
+
+    /* R21 过去分词单独当谓语：I seen him yesterday. → I saw / I have seen
+       限死：主语代词紧跟纯过去分词，且前面没有 have/has/had/be（那才是完成式或被动）。 */
+    if (nx && PP_ONLY[nx] && (SUBJ_I.has(w) || SUBJ_3S.has(w) || SUBJ_PL.has(w)) &&
+        !(i > 0 && (['have','has','had'].includes(t[i - 1]) || BE_ALL.has(t[i - 1]))))
+      add('error', '<b>' + nx + '</b> 不能单独当谓语',
+          '要么用过去式 <b>' + PP_ONLY[nx] + '</b>，要么用完成时 <b>have/has ' + nx + '</b>');
+
+    /* R22 do/does/did + 情态动词：Does he can swim? → Can he swim? */
+    /* 疑问句语序是 do + 主语 + 动词，所以情态动词可能落在 nx 或 nx2 */
+    const modalAfterDo = MODALS.has(nx) ? nx :
+      ((SUBJ_I.has(nx) || SUBJ_3S.has(nx) || SUBJ_PL.has(nx)) && MODALS.has(nx2) ? nx2 : '');
+    if (AUX_DO.has(w) && modalAfterDo)
+      add('error', '<b>' + w + '</b> 和 <b>' + modalAfterDo + '</b> 不能一起用',
+          '情态动词自己就能提问：<b>' + modalAfterDo.charAt(0).toUpperCase() + modalAfterDo.slice(1) + '</b> ' +
+          (modalAfterDo === nx2 ? nx : '…') + ' …?');
+
+    /* R23 as + 比较级 as：He is as taller as me. → as tall as */
+    if (w === 'as' && nx && /er$/.test(nx) && nx.length > 3 && nx2 === 'as' && !PREPS.has(nx))
+      add('error', '<b>as … as</b> 中间要用原级，不能用比较级 <b>' + nx + '</b>',
+          '改成 as <b>' + nx.replace(/ier$/, 'y').replace(/er$/, '') + '</b> as');
+
+    /* R24 be + 单数职业名词却少了冠词：He is teacher. → He is a teacher. */
+    if (BE_ALL.has(w) && nx && JOB_NOUNS.has(nx) && !DET.has(nx))
+      add('error', '<b>' + nx + '</b> 前面少了冠词',
+          '单数的人／职业前面要加 <b>a</b> 或 <b>an</b>：' + w + ' <b>' + (/^[aeiou]/.test(nx) ? 'an' : 'a') + ' ' + nx + '</b>');
+
+    /* R25 动词后面该用副词却用了形容词：He drives careful. → carefully */
+    if (ADV_VERBS.has(w) && nx && ADV_NEEDED[nx] && (!nx2 || pf[i + 1]))
+      add('error', '修饰动词 <b>' + w + '</b> 要用副词，不能用形容词 <b>' + nx + '</b>',
+          '改成 <b>' + ADV_NEEDED[nx] + '</b>：' + w + ' <b>' + ADV_NEEDED[nx] + '</b>');
 
     /* R13 to + 动词ing（want to / like to 后面要原形） */
     if (w === 'to' && nx && /ing$/.test(nx) && nx.length > 4 && !['nothing','something','anything','morning','evening'].includes(nx))

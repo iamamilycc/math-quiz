@@ -17,6 +17,19 @@ const _api = fn(sandbox.DATA);
 const checkGrammar = _api.checkGrammar;
 
 const ERR = [
+  // ⭐ 拿英语题库 458 个干扰项反查出来的漏报，补成规则 R20-R29 后必须抓得到
+  ['Me and Tom are friends.',            '宾格当主语'],
+  ['I seen him yesterday.',              '过去分词单独当谓语'],
+  ['Does he can swim?',                  'do + 情态动词'],
+  ['He is as taller as me.',             'as + 比较级'],
+  ['He is teacher.',                     '职业名词缺冠词'],
+  ['He drives careful.',                 '该用副词'],
+  ['He sings good.',                     '该用副词 well'],
+  ["I don't know what did you do.",      '宾语从句语序'],
+  ['He asked where did I live.',         '宾语从句语序'],
+  ['If it will rain tomorrow, we will stay home.', 'if 条件句不用 will'],
+  ['There are some bread on the table.', 'There are + 不可数'],
+  ['He has joined the army for three years.', '短暂动词 + for'],
   ['Excuse me, where is you book?',      '物主代词'],
   ['Is this you handbag?',               '物主代词'],
   ['This is me handbag on the table.',   '物主代词'],
@@ -57,6 +70,23 @@ const ERR = [
   ['She wants buy a new hat.',           'want + 原形'],
 ];
 const OK = [
+  // ⭐ 补规则 R20-R29 时，全册例句自检抓到的边界（都必须零误报）
+  'What did you do yesterday?', 'I know what you did.', 'She asked where I lived.',
+  'If it rains tomorrow, we will stay home.', 'I do not know if he will come.',
+  'Good morning, Miss Green, how are you?', 'Hello, how are you this morning?',
+  'There is some bread on the table.', 'There are some books on the desk.',
+  'He has been in the army for three years.', 'I have lived here for ten years.',
+  'Tom gave the book to me.', 'He told me a story.', 'I have seen him twice.',
+  'She has gone to school.', 'He is a teacher in our school.', 'She is my friend.',
+  'They are teachers here.', 'He is as tall as me.', 'He drives carefully every day.',
+  'She sings well in class.', 'Give me the book, please.', 'Come with us to the park.',
+  // ⭐ 拿英语题库里 1443 个英文句子反扫检查器抓出来的三类误报（2026-09-09）
+  //    误报比漏报更伤：孩子写对了却被判错，他会把对的当错的记住。
+  'How long have you been here?', 'Have you been to Beijing?',     // 完成式疑问句 have+you+been
+  'Which is bigger, A or B?',                                      // A 是代号不是冠词
+  'Tom and I are friends.', 'My sister and I are students.',       // 复合主语配 are
+  'You and he are both right.', 'My father and mother are teachers.',
+  'Are you Chinese?', 'What day is it today?', 'Is he American?',   // 兼形容词/副词的词不是名词
   'Excuse me, where is your book?', 'Is this your handbag?', 'This is my handbag on the table.',
   'He likes apples very much.', 'She goes to school every morning.', 'He has two brothers.',
   'I am a student here.', 'They are very happy today.', 'Does he like coffee every day?',

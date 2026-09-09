@@ -42,7 +42,8 @@ python3 build/build_eng.py   && node build/test_eng.js
 python3 build/build_words.py && node build/tests_words.js && node build/tests_grammar.js
 node    build/tests_autofix.js          # 写错时的自动改正
 node    build/tests_native.js           # 写错时的地道说法（不依赖 AI Key）
-python3 build/tests/audit_eng.py        # 英语题库深度自审
+python3 build/tests/audit_eng.py        # 英语题库深度自审（结构：答案分布/去重键/标签闭合）
+node    build/tests/audit_eng_english.js # ⭐ 英语题库的英文内容，用判分引擎重新判一遍
 node    build/tests/walkthrough_eng.js  # 使用者视角走查
 python3 build/tests/inject_rules.py     # 故障注入：确认建置规则真的会变红
 python3 build/tests_click.py            # 单词模块真点击走查
@@ -85,6 +86,31 @@ python3 build/tests_parity_grammar.py   # 两个站的判分引擎必须逐字�
 
 ⭐ **不能让孩子「改对了才配看母语者怎么说」** —— 他最想知道地道说法的时刻，就是刚写错那一刻。
 所以写错的反馈是三段：**错在哪 → 改好长这样 → 同样的意思欧美人会这样说**。
+
+## 题是 AI 写的 —— 所以内容本身也要被程序验一遍
+
+题目和例句都是我（AI）写的，孩子没有判断能力，**不能让他去发现我的错**。
+`audit_eng.py` 查的是结构（答案分布、去重键、标签闭合），一条都没查英文内容本身。
+所以有了 `build/tests/audit_eng_english.js`：**拿造句关的判分引擎当第三方，把题库里每个英文句子重新判一遍**。
+
+四条断言：
+
+| # | 断言 | 现状 |
+|---|---|---|
+| ① | 「选正确的」题里被列为答案的选项，语法不能有错（0 容忍） | 454 个整句选项，**0 个** |
+| ② | 被判错的句子必须全在白名单（`known_bad_sentences.txt`）里 | 48 句，全部是刻意的错误示范 |
+| ③ | 白名单里的句子必须**仍然**被判错 | 防止把正确句误当错例，0 句过期 |
+| ④ | 判断题说「这句是对的」，引擎就不能判它错 | 10 题，**0 矛盾** |
+
+②③ 是一对：新写的英文句子有语法错 → ② 变红；把正确句误当错例 → ③ 变红。
+
+⭐ **反过来，题库也是检查器最好的语料**。用 458 个干扰项反扫，抓出：
+- **3 类误报**（`Have you been…?` / `Tom and I are…` / `Which is bigger, A or B?`）—— 误报比漏报更伤
+- **一份漏报清单** → 补出规则 R20–R29（宾格当主语、过去分词单独当谓语、do+情态、as+比较级、
+  职业名词缺冠词、形容词当副词、宾语从句语序、if 从句不用 will、There are+不可数、短暂动词+for）
+
+规则层仍然覆盖不到的（如 `While he came in, I was cooking.` 这种体貌搭配），
+测试会用 ℹ️ 列出来，**显式承认查不到**，不假装全查过了。
 
 ## ⭐ 铁律：不准把校验推给孩子
 
@@ -190,13 +216,13 @@ python3 build/tests_parity_grammar.py   # 两个站的判分引擎必须逐字�
 | `ARCH001` words.html 916 行超过 800 | **接受**。自包含单页应用，分了「基础／语法检查器／AI 层／路由／三种练法」五区，改哪块很清楚。语法检查器（约 280 行）将来若要给别的项目复用，再抽成 `assets/grammar-en.js`。 |
 | `BAK001` 找不到备份脚本 | **不适用**。内容全是纯文本 `build/*.py`，git + GitHub 就是备份，生成物随时可重建。 |
 | `SET001` 有上传缺导出 | **误报**。错题本有「📋 复制错题清单」导出。 |
-| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，13 支覆盖到位。 |
+| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，14 支覆盖到位。 |
 | `DOC002` 找不到教程档 | **本文件就是**。体检只认特定文件名。 |
 
 ## 自查清单（每次改完照着走）
 
 1. `python3 build/build_words.py` —— 体检不过就不生成文件
-2. 13 支测试全绿（见上面「一次改完要跑的全套」）
+2. 14 支测试全绿（见上面「一次改完要跑的全套」）
 3. `python3 scripts/project_audit.py .` —— **P0 必须为 0**
 4. 真点击走查一遍（`tests_click.py` 已覆盖，改了 UI 要人工再点一次）
 5. `git push` 之后 **curl 线上地址断言到新内容** —— 本机绿 ≠ 孩子能用
