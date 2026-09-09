@@ -128,6 +128,14 @@ function speak(t) {
     speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
 
+/* 易混词提示要用的中文释义索引：能用课本的口径就别用内建的 */
+const ZH_DICT = (() => {
+  const d = {};
+  try { DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+    const k = String(w.w).toLowerCase(); if (!d[k]) d[k] = w.zh;
+  }))); } catch (e) {}
+  return d;
+})();
 /* 语法引擎要用的词表（判「you book」这类错误）——从本册数据展平 */
 const GRAMMAR_WORDS = (() => {
   const a = [];
@@ -362,6 +370,94 @@ const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information'
 const PUNCTUAL = { join: 'be in', buy: 'have', die: 'be dead', come: 'be here', go: 'be away',
   arrive: 'be here', begin: 'be on', start: 'be on', finish: 'be over', leave: 'be away',
   borrow: 'keep', marry: 'be married', open: 'be open', close: 'be closed', get: 'have' };
+/* ⭐ 同音词 / 形近易混词：孩子写 here 但答案是 hear，判错是对的，
+   但只给「差在这里：h[e]a[]r」的字母对比，他会以为自己拼错了——
+   其实他是**记混了两个词**，该讲的是这两个词的区别，不是拼写。
+   中文释义写在这里，因为这些词不一定都在本册词表里。 */
+const CONFUSABLE = {
+  hear:{here:'这里、在这'}, here:{hear:'听见'},
+  son:{sun:'太阳'}, sun:{son:'儿子'},
+  see:{sea:'海'}, sea:{see:'看见'},
+  too:{two:'二',to:'到、向'}, two:{too:'也、太',to:'到、向'}, to:{too:'也、太',two:'二'},
+  their:{there:'那里',"they're":'他们是'},
+  there:{their:'他们的',"they're":'他们是'},
+  your:{"you're":'你是'}, its:{"it's":'它是'},
+  write:{right:'对的、右边'}, right:{write:'写'},
+  no:{know:'知道'}, know:{no:'不、没有'},
+  buy:{by:'通过、在…旁',bye:'再见'}, by:{buy:'买',bye:'再见'}, bye:{buy:'买',by:'通过'},
+  meet:{meat:'肉'}, meat:{meet:'见面'},
+  week:{weak:'虚弱的'}, weak:{week:'星期'},
+  wear:{where:'哪里'}, where:{wear:'穿'},
+  one:{won:'赢了'}, won:{one:'一'},
+  four:{for:'为了'}, for:{four:'四'},
+  hour:{our:'我们的'}, our:{hour:'小时'},
+  flour:{flower:'花'}, flower:{flour:'面粉'},
+  pair:{pear:'梨'}, pear:{pair:'一对'},
+  piece:{peace:'和平'}, peace:{piece:'一片、一块'},
+  road:{rode:'骑（ride 的过去式）'}, rode:{road:'路'},
+  sale:{sail:'航行'}, sail:{sale:'出售'},
+  some:{sum:'总数'}, sum:{some:'一些'},
+  tail:{tale:'故事'}, tale:{tail:'尾巴'},
+  wait:{weight:'重量'}, weight:{wait:'等待'},
+  whole:{hole:'洞'}, hole:{whole:'整个的'},
+  wood:{would:'将会'}, would:{wood:'木头'},
+  blue:{blew:'吹（blow 的过去式）'}, blew:{blue:'蓝色'},
+  break:{brake:'刹车'}, brake:{break:'打破、休息'},
+  knew:{new:'新的'}, new:{knew:'知道（know 的过去式）'},
+  night:{knight:'骑士'}, knight:{night:'夜晚'},
+  plane:{plain:'平原、朴素的'}, plain:{plane:'飞机'},
+  threw:{through:'穿过'},
+  through:{threw:'扔（throw 的过去式）',though:'虽然',thought:'想（think 的过去式）'},
+  weather:{whether:'是否'}, whether:{weather:'天气'},
+  which:{witch:'女巫'}, witch:{which:'哪一个'},
+  "they're":{their:'他们的',there:'那里'}, "you're":{your:'你的'}, "it's":{its:'它的'},
+  /* 形近（不同音但极易混，初中高频） */
+  quite:{quiet:'安静的'}, quiet:{quite:'相当、十分'},
+  though:{thought:'想（think 的过去式）',through:'穿过'},
+  thought:{though:'虽然',through:'穿过'},
+  desert:{dessert:'甜点'}, dessert:{desert:'沙漠；抛弃'},
+  accept:{except:'除了'}, except:{accept:'接受'},
+  advice:{advise:'建议（动词）'}, advise:{advice:'建议（名词）'},
+  lose:{loose:'松的'}, loose:{lose:'失去、输'},
+  than:{then:'然后'}, then:{than:'比'},
+  form:{from:'来自'}, from:{form:'表格、形式'},
+  later:{latter:'后者'}, latter:{later:'后来、更晚'},
+  angel:{angle:'角'}, angle:{angel:'天使'},
+  dairy:{diary:'日记'}, diary:{dairy:'乳制品'},
+  coast:{cost:'花费'}, cost:{coast:'海岸'}
+};
+/* 使用者写的是不是「另一个真实存在的词」而不是拼错？是的话回传该讲的重点。
+   dict 是本册词表（可选），有的话优先用词表里的中文释义，口径和课本一致。 */
+function confusableNote(answer, typed, dict) {
+  const a = String(answer || '').toLowerCase().trim();
+  const t = String(typed || '').toLowerCase().trim().replace(/[‘’]/g, "'");
+  if (!a || !t || a === t) return '';
+  const m = CONFUSABLE[a];
+  if (!m || !m[t]) return '';
+  const zh = (dict && dict[t]) || m[t];
+  const same = SAME_SOUND[a] && SAME_SOUND[a].indexOf(t) >= 0;
+  return (same
+      ? '你写的 <b>' + t + '</b> 也是一个词，意思是「' + zh + '」。它和 <b>' + a + '</b> <b>读音一模一样</b>，'
+        + '只能靠拼写和意思分辨 —— 这不是拼错，是两个词记混了。'
+      : '你写的 <b>' + t + '</b> 是另一个词，意思是「' + zh + '」。它和 <b>' + a + '</b> 长得很像，特别容易混。');
+}
+/* 哪些组是真正的同音词（其余是形近但不同音） */
+const SAME_SOUND = {
+  hear:['here'], here:['hear'], son:['sun'], sun:['son'], see:['sea'], sea:['see'],
+  too:['two','to'], two:['too','to'], to:['too','two'],
+  their:['there',"they're"], there:['their'], your:["you're"], its:["it's"],
+  write:['right'], right:['write'], no:['know'], know:['no'],
+  buy:['by','bye'], by:['buy','bye'], bye:['buy','by'],
+  meet:['meat'], meat:['meet'], week:['weak'], weak:['week'],
+  wear:['where'], where:['wear'], one:['won'], won:['one'], four:['for'], for:['four'],
+  hour:['our'], our:['hour'], flour:['flower'], flower:['flour'], pair:['pear'], pear:['pair'],
+  piece:['peace'], peace:['piece'], road:['rode'], rode:['road'], sale:['sail'], sail:['sale'],
+  some:['sum'], sum:['some'], tail:['tale'], tale:['tail'], wait:['weight'], weight:['wait'],
+  whole:['hole'], hole:['whole'], wood:['would'], would:['wood'], blue:['blew'], blew:['blue'],
+  break:['brake'], brake:['break'], knew:['new'], new:['knew'], night:['knight'], knight:['night'],
+  plane:['plain'], plain:['plane'], threw:['through'], through:['threw'],
+  weather:['whether'], whether:['weather'], which:['witch']
+};
 /* ⭐ 英式 → 美式拼写对照。NCE1 是英式教材，词表收的是 colour / favourite / grey，
    但孩子在别处学的可能是美式。**他没有拼错**，判他错会让他以为 color 是错的（更糟）。
    正确做法：算对，同时告诉他这是美式拼法、本书用英式。 */
@@ -1068,7 +1164,7 @@ async function aiCheckSentence(word, sentence) {
   const key = aiGetKey();
   if (!key) return null;                       /* 没 Key → 静默跳过 */
   const prompt =
-    '你是亲切的小学英语老师。一个中国孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
+    '你是亲切的初中英语老师。一个中国初中生用指定单词造了一个句子。语法已经由程序检查过了，' +
     '你要做两件事：\n\n' +
     '【一】判断这句话**意思通不通、搭配对不对**\n' +
     '  · 意思荒谬算不通（如 "I eat a book every day."）；搭配错算错（如 open the light 应为 turn on the light）。\n' +
@@ -1078,7 +1174,7 @@ async function aiCheckSentence(word, sentence) {
     '  · 若真的不通，fix 给**改好的完整句子**（尽量保留孩子原来想表达的意思，只改错的地方）。\n\n' +
     '【二】⭐ 最重要：**同样这个意思、同样这个场合，英语母语者平常会怎么说**\n' +
     '  · 请**照着孩子这一句的意思去改写**，不要另起炉灶讲别的事。\n' +
-    '  · 必须仍然用上这个单词，长度和难度和孩子那句差不多（小学程度，别用生僻词）。\n' +
+    '  · 必须仍然用上这个单词，长度和难度和他那句差不多（初中程度：可以用从句和常见短语，别用雅思托福级生僻词）。\n' +
     '  · 写进 better，中文翻译写进 betterZh。\n' +
     '  · 再用一句简体中文说清楚**差在哪里**（哪个词换了／语序变了／换了个更常用的搭配），写进 diff，' +
     '30 字内，说人话。如果孩子那句已经很地道，diff 就写「你这句已经很地道了」。\n\n' +
@@ -1147,7 +1243,7 @@ function openSettings() {
       (has ? '已设置，留空则保持不变' : '粘贴智谱开放平台的 API Key') + '">' +
     '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">模型</div>' +
     '<div style="font-size:13px;color:#8a7fa8;margin-bottom:6px">' +
-    'glm-4.7-flash 是智谱目前免费的主力模型（30B），第一册这种小学程度的句子够用。' +
+    'glm-4.7-flash 是智谱目前免费的主力模型（30B），新概念第一册这种初中程度的句子够用。' +
     '想更稳可以换成按量计费的 glm-4-plus。<br>' +
     '⚠️ 不管用哪个，<b>AI 给的示范句都会先过一遍本地语法检查</b>，没通过就不显示给孩子。</div>' +
     '<select class="inp" id="aiModelIn">' +
@@ -1380,10 +1476,14 @@ function cardCheck() {
                   : '🎉 拼对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 正确拼写是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) +
           '<br>你写的是「' + esc(v || '（空）') + '」' +
-          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
-          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
-          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
-          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
+          /* ⚠️ 写成另一个真词（hear→here）不是拼错，是记混了两个词——
+             这时给字母对比只会误导他「我拼错了」，该讲的是这两个词怎么分。 */
+          (confusableNote(w.w, v, ZH_DICT)
+            ? '<div class="eg" style="margin-top:6px;background:#fff">🔀 ' + confusableNote(w.w, v, ZH_DICT) + '</div>'
+            : '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+              '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+              '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+              '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>') +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>' +
           '<br><span style="font-size:12.5px;color:#8a7fa8">这个词已经放进错题本，等下可以再练一次。</span>') +
     '</div><button class="btn btn-main" onclick="cardNext()">下一个 →</button>';
@@ -1445,10 +1545,13 @@ function recallCheck() {
                     + '<div style="margin-top:6px;font-size:13.5px">' + esc(w.egs[0]) + '</div>'
                   : '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>你写的是「' + esc(v || '（空）') + '」' +
-          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
-          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
-          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
-          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
+          /* 背诵关更容易写成同音词（脑子里是读音）——同样先判是不是记混了两个词 */
+          (confusableNote(w.w, v, ZH_DICT)
+            ? '<div class="eg" style="margin-top:6px;background:#fff">🔀 ' + confusableNote(w.w, v, ZH_DICT) + '</div>'
+            : '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+              '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+              '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+              '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>') +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>') +
     '</div><button class="btn btn-main" onclick="recallNext()">下一个 →</button>';
   setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length, rc.ok);

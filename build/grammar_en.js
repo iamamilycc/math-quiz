@@ -225,6 +225,94 @@ const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information'
 const PUNCTUAL = { join: 'be in', buy: 'have', die: 'be dead', come: 'be here', go: 'be away',
   arrive: 'be here', begin: 'be on', start: 'be on', finish: 'be over', leave: 'be away',
   borrow: 'keep', marry: 'be married', open: 'be open', close: 'be closed', get: 'have' };
+/* ⭐ 同音词 / 形近易混词：孩子写 here 但答案是 hear，判错是对的，
+   但只给「差在这里：h[e]a[]r」的字母对比，他会以为自己拼错了——
+   其实他是**记混了两个词**，该讲的是这两个词的区别，不是拼写。
+   中文释义写在这里，因为这些词不一定都在本册词表里。 */
+const CONFUSABLE = {
+  hear:{here:'这里、在这'}, here:{hear:'听见'},
+  son:{sun:'太阳'}, sun:{son:'儿子'},
+  see:{sea:'海'}, sea:{see:'看见'},
+  too:{two:'二',to:'到、向'}, two:{too:'也、太',to:'到、向'}, to:{too:'也、太',two:'二'},
+  their:{there:'那里',"they're":'他们是'},
+  there:{their:'他们的',"they're":'他们是'},
+  your:{"you're":'你是'}, its:{"it's":'它是'},
+  write:{right:'对的、右边'}, right:{write:'写'},
+  no:{know:'知道'}, know:{no:'不、没有'},
+  buy:{by:'通过、在…旁',bye:'再见'}, by:{buy:'买',bye:'再见'}, bye:{buy:'买',by:'通过'},
+  meet:{meat:'肉'}, meat:{meet:'见面'},
+  week:{weak:'虚弱的'}, weak:{week:'星期'},
+  wear:{where:'哪里'}, where:{wear:'穿'},
+  one:{won:'赢了'}, won:{one:'一'},
+  four:{for:'为了'}, for:{four:'四'},
+  hour:{our:'我们的'}, our:{hour:'小时'},
+  flour:{flower:'花'}, flower:{flour:'面粉'},
+  pair:{pear:'梨'}, pear:{pair:'一对'},
+  piece:{peace:'和平'}, peace:{piece:'一片、一块'},
+  road:{rode:'骑（ride 的过去式）'}, rode:{road:'路'},
+  sale:{sail:'航行'}, sail:{sale:'出售'},
+  some:{sum:'总数'}, sum:{some:'一些'},
+  tail:{tale:'故事'}, tale:{tail:'尾巴'},
+  wait:{weight:'重量'}, weight:{wait:'等待'},
+  whole:{hole:'洞'}, hole:{whole:'整个的'},
+  wood:{would:'将会'}, would:{wood:'木头'},
+  blue:{blew:'吹（blow 的过去式）'}, blew:{blue:'蓝色'},
+  break:{brake:'刹车'}, brake:{break:'打破、休息'},
+  knew:{new:'新的'}, new:{knew:'知道（know 的过去式）'},
+  night:{knight:'骑士'}, knight:{night:'夜晚'},
+  plane:{plain:'平原、朴素的'}, plain:{plane:'飞机'},
+  threw:{through:'穿过'},
+  through:{threw:'扔（throw 的过去式）',though:'虽然',thought:'想（think 的过去式）'},
+  weather:{whether:'是否'}, whether:{weather:'天气'},
+  which:{witch:'女巫'}, witch:{which:'哪一个'},
+  "they're":{their:'他们的',there:'那里'}, "you're":{your:'你的'}, "it's":{its:'它的'},
+  /* 形近（不同音但极易混，初中高频） */
+  quite:{quiet:'安静的'}, quiet:{quite:'相当、十分'},
+  though:{thought:'想（think 的过去式）',through:'穿过'},
+  thought:{though:'虽然',through:'穿过'},
+  desert:{dessert:'甜点'}, dessert:{desert:'沙漠；抛弃'},
+  accept:{except:'除了'}, except:{accept:'接受'},
+  advice:{advise:'建议（动词）'}, advise:{advice:'建议（名词）'},
+  lose:{loose:'松的'}, loose:{lose:'失去、输'},
+  than:{then:'然后'}, then:{than:'比'},
+  form:{from:'来自'}, from:{form:'表格、形式'},
+  later:{latter:'后者'}, latter:{later:'后来、更晚'},
+  angel:{angle:'角'}, angle:{angel:'天使'},
+  dairy:{diary:'日记'}, diary:{dairy:'乳制品'},
+  coast:{cost:'花费'}, cost:{coast:'海岸'}
+};
+/* 使用者写的是不是「另一个真实存在的词」而不是拼错？是的话回传该讲的重点。
+   dict 是本册词表（可选），有的话优先用词表里的中文释义，口径和课本一致。 */
+function confusableNote(answer, typed, dict) {
+  const a = String(answer || '').toLowerCase().trim();
+  const t = String(typed || '').toLowerCase().trim().replace(/[‘’]/g, "'");
+  if (!a || !t || a === t) return '';
+  const m = CONFUSABLE[a];
+  if (!m || !m[t]) return '';
+  const zh = (dict && dict[t]) || m[t];
+  const same = SAME_SOUND[a] && SAME_SOUND[a].indexOf(t) >= 0;
+  return (same
+      ? '你写的 <b>' + t + '</b> 也是一个词，意思是「' + zh + '」。它和 <b>' + a + '</b> <b>读音一模一样</b>，'
+        + '只能靠拼写和意思分辨 —— 这不是拼错，是两个词记混了。'
+      : '你写的 <b>' + t + '</b> 是另一个词，意思是「' + zh + '」。它和 <b>' + a + '</b> 长得很像，特别容易混。');
+}
+/* 哪些组是真正的同音词（其余是形近但不同音） */
+const SAME_SOUND = {
+  hear:['here'], here:['hear'], son:['sun'], sun:['son'], see:['sea'], sea:['see'],
+  too:['two','to'], two:['too','to'], to:['too','two'],
+  their:['there',"they're"], there:['their'], your:["you're"], its:["it's"],
+  write:['right'], right:['write'], no:['know'], know:['no'],
+  buy:['by','bye'], by:['buy','bye'], bye:['buy','by'],
+  meet:['meat'], meat:['meet'], week:['weak'], weak:['week'],
+  wear:['where'], where:['wear'], one:['won'], won:['one'], four:['for'], for:['four'],
+  hour:['our'], our:['hour'], flour:['flower'], flower:['flour'], pair:['pear'], pear:['pair'],
+  piece:['peace'], peace:['piece'], road:['rode'], rode:['road'], sale:['sail'], sail:['sale'],
+  some:['sum'], sum:['some'], tail:['tale'], tale:['tail'], wait:['weight'], weight:['wait'],
+  whole:['hole'], hole:['whole'], wood:['would'], would:['wood'], blue:['blew'], blew:['blue'],
+  break:['brake'], brake:['break'], knew:['new'], new:['knew'], night:['knight'], knight:['night'],
+  plane:['plain'], plain:['plane'], threw:['through'], through:['threw'],
+  weather:['whether'], whether:['weather'], which:['witch']
+};
 /* ⭐ 英式 → 美式拼写对照。NCE1 是英式教材，词表收的是 colour / favourite / grey，
    但孩子在别处学的可能是美式。**他没有拼错**，判他错会让他以为 color 是错的（更糟）。
    正确做法：算对，同时告诉他这是美式拼法、本书用英式。 */

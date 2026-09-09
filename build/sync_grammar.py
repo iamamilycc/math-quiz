@@ -44,7 +44,9 @@ def wrap(engine: str, words_js: str) -> str:
         "         collocFix: collocFix, hitText: hitText, senseHits: senseHits,\n"
         "         hasWord: hasWord, tooSimilar: tooSimilar,\n"
         "         normalize: normalize, normSent: normSent, wordCount: wordCount,\n"
-        "         COLLOC: COLLOC, MK_PER_WORD: MK_PER_WORD, MK_MIN_WORDS: MK_MIN_WORDS };\n"
+        "         usSpellingOf: usSpellingOf, confusableNote: confusableNote,\n"
+        "         COLLOC: COLLOC, CONFUSABLE: CONFUSABLE, BR_US: BR_US,\n"
+        "         MK_PER_WORD: MK_PER_WORD, MK_MIN_WORDS: MK_MIN_WORDS };\n"
         "})();\n" % (words_js, engine)
     )
 

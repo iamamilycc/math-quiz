@@ -45,8 +45,27 @@ def main():
                '不一致 —— 别手改精读站那份，改 build/grammar_en.js 后重跑 sync_grammar.py')
         ck('精读站那份写了「不要手改」', '不要手改' in dst)
         ck('精读站那份挂上了 window.GrammarEN', 'window.GrammarEN' in dst)
-        for fn in ['checkGrammar', 'autoFix', 'collocHits', 'senseHits', 'hasWord']:
+        for fn in ['checkGrammar', 'autoFix', 'collocHits', 'senseHits', 'hasWord',
+                   'usSpellingOf', 'confusableNote']:
             ck('导出了 ' + fn, re.search(r'\b%s:\s*%s\b' % (fn, fn), dst) is not None)
+
+        # ⭐ 零孤儿：精读站用到的每个 GrammarEN.xxx 都必须真的被导出。
+        #    手写导出列表一定会漏（这条就是漏掉 confusableNote / usSpellingOf 之后加的），
+        #    grep「有没有调用」抓不到，只有把两边对起来才抓得到。
+        jd_dir = os.path.abspath(os.path.join(ROOT, '..', 'jingdu', 'assets'))
+        used = set()
+        if os.path.isdir(jd_dir):
+            for fn in os.listdir(jd_dir):
+                if not fn.endswith('.js') or fn == 'grammar-en.js':
+                    continue
+                txt = open(os.path.join(jd_dir, fn), encoding='utf-8').read()
+                used |= set(re.findall(r'GrammarEN\s*&&\s*GrammarEN\.(\w+)', txt))
+                used |= set(re.findall(r'\bG\.(\w+)\s*\(', txt))
+                used |= set(re.findall(r'window\.GrammarEN\.(\w+)', txt))
+        exported = set(re.findall(r'(\w+):\s*\1\b', dst)) | set(re.findall(r'(\w+):\s*\w+\b', dst))
+        missing = sorted(u for u in used if u not in exported)
+        ck('精读站用到的每个引擎函数都被导出了', not missing,
+           '这些被调用却没导出（调用时会 undefined，页面静默失效）：' + ', '.join(missing))
 
     # 引擎必须真的被两个站用上
     words_html = os.path.join(ROOT, 'words.html')

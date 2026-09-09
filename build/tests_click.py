@@ -55,6 +55,16 @@ def main():
             ck('拼错判错并给正确拼写', '正确拼写是' in T())
             ck('拼错给音标', '/' in T())
             ck('拼错指出差在哪个字母', '差在这里' in T(), T()[-300:])
+            # ⭐ 写成同音词（另一个真词）不是拼错 —— 要讲两个词的区别，不是给字母对比
+            pg.evaluate("""(()=>{ renderHome(); openUnit(0); openSec(0); openMode('card');
+              cur.sec.words[cd.i] = {w:'hear', ipa:'/hɪə/', pos:'v.', zh:'听见', lesson:1,
+                                     egs:['I can hear you clearly now.','Did you hear the news?','I hear a bird singing.']};
+              cardFlip(); })()""")
+            pg.wait_for_timeout(200)
+            pg.fill('#cdIn', 'here'); btn('检查').click(); pg.wait_for_timeout(250)
+            t_con = pg.inner_text('#cdFb')
+            ck('写成同音词时讲两个词的区别', '读音一模一样' in t_con and '这里' in t_con, t_con[:200])
+            ck('这时不给字母对比（那会误导成拼错）', '差在这里' not in t_con, t_con[:200])
             ck('拼错给例句帮助记忆', '看一遍例句再记' in T(), T()[-300:])
             ck('拼错进错题本', pg.evaluate(
                 "JSON.parse(localStorage.getItem('mathquiz_wrongbook_v1')||'[]').some(x=>x.subject==='engword')"))

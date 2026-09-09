@@ -38,6 +38,29 @@ ok(/const usNote = usSpellingOf\(w\.w, v\);/.test(src) &&
 // ⭐ 朗读要用英式（教材和音标都是英式，读美音会对不上）
 ok(/u\.lang = 'en-GB'/.test(src), '朗读用 en-GB（英式教材）');
 
+// ⭐ 同音词/形近词：写成另一个真词不是拼错，是记混了两个词 —— 该讲区别，不是给字母对比
+(function () {
+  const blk = src.match(/\/\* ⭐ 同音词 \/ 形近易混词[\s\S]*?(?=\/\* ⭐ 英式)/);
+  if (!blk) { ok(false, '抽得出易混词表'); return; }
+  const api = new Function(blk[0] + '\nreturn {confusableNote, CONFUSABLE};')();
+  const n = api.confusableNote('hear', 'here');
+  ok(!!n, 'hear 写成 here 要给专门提示');
+  ok(/读音一模一样/.test(n), '同音词要说明「读音一样」');
+  ok(/这里/.test(n), '要说清另一个词是什么意思');
+  ok(/形近|长得很像/.test(api.confusableNote('quite', 'quiet')), '形近词的措辞和同音词不同');
+  ok(!api.confusableNote('hear', 'heer'), '真拼错的不走这条（仍给字母对比）');
+  ok(!api.confusableNote('book', 'book'), '完全相同不给提示');
+  // 表本身要自洽：每组的反向也要有
+  let miss = [];
+  Object.entries(api.CONFUSABLE).forEach(([a, m]) => Object.keys(m).forEach(b => {
+    if (!api.CONFUSABLE[b] || !api.CONFUSABLE[b][a]) miss.push(a + '→' + b + ' 有，反向没有');
+  }));
+  ok(miss.length === 0, '易混词表双向对称（写反了也要认得）', miss.slice(0, 5).join('; '));
+})();
+// 判分要真的接上：两个模式都要用
+ok((src.match(/confusableNote\(w\.w, v, ZH_DICT\)/g) || []).length >= 4,
+   '记忆卡和背诵都接上了易混词提示');
+
 console.log(`     单元 ${DATA.units.length} / 节 ${DATA.units.reduce((a,u)=>a+u.sections.length,0)} / 单词 ${words.length}`);
 
 // --- 例句规则（和建置校验同一套，双保险）---

@@ -128,6 +128,14 @@ function speak(t) {
     speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
 
+/* 易混词提示要用的中文释义索引：能用课本的口径就别用内建的 */
+const ZH_DICT = (() => {
+  const d = {};
+  try { DATA.units.forEach(u => u.sections.forEach(x => x.words.forEach(w => {
+    const k = String(w.w).toLowerCase(); if (!d[k]) d[k] = w.zh;
+  }))); } catch (e) {}
+  return d;
+})();
 /* 语法引擎要用的词表（判「you book」这类错误）——从本册数据展平 */
 const GRAMMAR_WORDS = (() => {
   const a = [];
@@ -468,10 +476,14 @@ function cardCheck() {
                   : '🎉 拼对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 正确拼写是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) +
           '<br>你写的是「' + esc(v || '（空）') + '」' +
-          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
-          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
-          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
-          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
+          /* ⚠️ 写成另一个真词（hear→here）不是拼错，是记混了两个词——
+             这时给字母对比只会误导他「我拼错了」，该讲的是这两个词怎么分。 */
+          (confusableNote(w.w, v, ZH_DICT)
+            ? '<div class="eg" style="margin-top:6px;background:#fff">🔀 ' + confusableNote(w.w, v, ZH_DICT) + '</div>'
+            : '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+              '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+              '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+              '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>') +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>' +
           '<br><span style="font-size:12.5px;color:#8a7fa8">这个词已经放进错题本，等下可以再练一次。</span>') +
     '</div><button class="btn btn-main" onclick="cardNext()">下一个 →</button>';
@@ -533,10 +545,13 @@ function recallCheck() {
                     + '<div style="margin-top:6px;font-size:13.5px">' + esc(w.egs[0]) + '</div>'
                   : '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>')
         : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>你写的是「' + esc(v || '（空）') + '」' +
-          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
-          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
-          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
-          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
+          /* 背诵关更容易写成同音词（脑子里是读音）——同样先判是不是记混了两个词 */
+          (confusableNote(w.w, v, ZH_DICT)
+            ? '<div class="eg" style="margin-top:6px;background:#fff">🔀 ' + confusableNote(w.w, v, ZH_DICT) + '</div>'
+            : '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+              '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+              '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+              '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>') +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>') +
     '</div><button class="btn btn-main" onclick="recallNext()">下一个 →</button>';
   setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length, rc.ok);
