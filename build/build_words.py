@@ -164,6 +164,23 @@ def validate(data):
                                 % (where, w['w'], w['zh']))
                 if not isinstance(w.get('lesson'), int) or not (1 <= w['lesson'] <= 144):
                     errs.append('%s 的 lesson 要是 1..144 的整数' % where)
+                # native：孩子造完句后给他看「欧美人常这样说」——地道搭配 + 一句例句
+                # native 选填：没有 AI Key 时的兜底参考。真正「按孩子那句话改写」靠 AI。
+                nat = w.get('native')
+                if nat is None:
+                    pass
+                elif not isinstance(nat, dict) or not all(k in nat for k in ('pat', 'eg', 'zh')):
+                    errs.append('%s：native 要有 pat（地道句型）/ eg（例句）/ zh（中文）三个字段' % where)
+                else:
+                    ne = str(nat['eg']).strip()
+                    if len(ne.split()) < 5:
+                        errs.append('%s native 例句：只有 %d 个单词，要 ≥5（%s）' % (where, len(ne.split()), ne))
+                    if not _has_word(ne, w['w']):
+                        errs.append('%s native 例句：没有用上这个词（%s）' % (where, ne))
+                    if not ne[:1].isupper() or ne[-1:] not in '.!?':
+                        errs.append('%s native 例句：句首要大写、句尾要有标点（%s）' % (where, ne))
+                    # native 例句和 egs 像一点没关系（它本来就是同一个词的常用说法）
+
                 egs = w.get('egs')
                 if not isinstance(egs, list) or len(egs) != EGS_REQUIRED:
                     errs.append('%s：egs 要正好 %d 句' % (where, EGS_REQUIRED))

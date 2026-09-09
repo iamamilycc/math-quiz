@@ -561,16 +561,22 @@ async function aiCheckSentence(word, sentence) {
   const key = aiGetKey();
   if (!key) return null;                       /* 没 Key → 静默跳过 */
   const prompt =
-    '你是亲切的小学英语老师。孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
-    '你只需要判断这两点：\n' +
-    '1. 句子的**意思通不通**（例如 "I eat a book every day." 语法没错但意思荒谬，算不通）。\n' +
-    '2. 有没有**明显的搭配错误**（例如 open the light 应该是 turn on the light）。\n' +
-    '⚠️ 下列情况一律判 ok:true，不准判错：语序/副词位置只要可以接受、用词是否「最自然」、' +
-    '风格好不好、大小写标点小毛病、句子简单幼稚。\n' +
-    '⚠️ 拿不准、或只是「可以更好」时，一律判 ok:true。' +
-    '把孩子本来正确的句子判成错，会让他把对的当错的记住，比漏掉一个错更糟。\n' +
-    '不管对不对，都用同一个单词示范一句更地道、难度相近的句子放进 better。\n' +
-    '只输出 JSON：{"ok":true或false,"tip":"一句简体中文说明，30字内","fix":"若不通，给修正后的完整句子；通顺则留空","better":"用同一个单词更地道的一句","betterZh":"better 的中文翻译"}\n\n' +
+    '你是亲切的小学英语老师。一个中国孩子用指定单词造了一个句子。语法已经由程序检查过了，' +
+    '你要做两件事：\n\n' +
+    '【一】判断这句话**意思通不通、搭配对不对**\n' +
+    '  · 意思荒谬算不通（如 "I eat a book every day."）；搭配错算错（如 open the light 应为 turn on the light）。\n' +
+    '  · ⚠️ 语序/副词位置只要可接受、用词是否「最自然」、风格、大小写标点、句子简单幼稚——一律判 ok:true。\n' +
+    '  · ⚠️ 拿不准或只是「可以更好」时一律 ok:true。把孩子本来对的句子判成错，' +
+    '会让他把对的当错的记住，比漏掉一个错更糟。\n' +
+    '  · 若真的不通，fix 给**改好的完整句子**（尽量保留孩子原来想表达的意思，只改错的地方）。\n\n' +
+    '【二】⭐ 最重要：**同样这个意思、同样这个场合，英语母语者平常会怎么说**\n' +
+    '  · 请**照着孩子这一句的意思去改写**，不要另起炉灶讲别的事。\n' +
+    '  · 必须仍然用上这个单词，长度和难度和孩子那句差不多（小学程度，别用生僻词）。\n' +
+    '  · 写进 better，中文翻译写进 betterZh。\n' +
+    '  · 再用一句简体中文说清楚**差在哪里**（哪个词换了／语序变了／换了个更常用的搭配），写进 diff，' +
+    '30 字内，说人话。如果孩子那句已经很地道，diff 就写「你这句已经很地道了」。\n\n' +
+    '只输出 JSON：{"ok":true或false,"tip":"一句简体中文说明，30字内","fix":"若不通，给改好的完整句子；通顺则留空",' +
+    '"better":"母语者在同样场合会说的一句（仍用这个单词）","betterZh":"better 的中文翻译","diff":"差在哪里，30字内"}\n\n' +
     '指定单词：' + word + '\n孩子的句子：' + sentence;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12000);   /* 12 秒还没回就放弃，别让孩子干等 */
@@ -593,7 +599,8 @@ async function aiCheckSentence(word, sentence) {
     const r = JSON.parse(t);
     if (typeof r.ok !== 'boolean') return { error: 'AI 返回格式不对，这次跳过' };
     return { ok: r.ok, tip: String(r.tip || ''), fix: String(r.fix || ''),
-             better: String(r.better || ''), betterZh: String(r.betterZh || '') };
+             better: String(r.better || ''), betterZh: String(r.betterZh || ''),
+             diff: String(r.diff || '') };
   } catch (e) {
     clearTimeout(timer);
     return { error: e.name === 'AbortError' ? 'AI 检查超时了，这次跳过' : '连不上智谱，这次跳过' };
@@ -633,6 +640,88 @@ function saveSettings() {
 }
 function clearKey() { aiSetKey(''); openSettings(); }
 
+/* 「欧美人常这样说」——孩子造完句之后给他看地道说法。
+   规则层判语法、这一块给用法：同一个词，母语者习惯用哪个句型、搭配什么词。
+   有 AI Key 时还会针对孩子那一句再给一条量身的。 */
+function nativeBlock(w) {
+  const n = w.native; if (!n) return '';
+  return '<div class="fb tip" style="margin-top:10px">🌟 <b>欧美人常这样用「' + esc(w.w) + '」</b>' +
+    '<div style="margin-top:6px;font-size:14px">常用句型：<b>' + esc(n.pat) + '</b></div>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(n.eg) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(n.eg) + ')">🔊</button>' +
+      '<br><span style="color:#8a7fa8;font-size:13px">' + esc(n.zh) + '</span></div>' +
+    (n.note ? '<div style="margin-top:6px;font-size:13.5px">💡 ' + esc(n.note) + '</div>' : '') +
+    '</div>';
+}
+/* 把检查器查到的错自动改好，直接给孩子看「改好应该是这样」。
+   只做有把握的替换（词形、冠词、大小写、标点），改不动的就不改。 */
+function autoFix(sent, issues) {
+  let out = String(sent);
+  const rep = (re, to) => { out = out.replace(re, to); };
+  issues.forEach(x => {
+    const m = String(x.fix).replace(/<[^>]+>/g, '');
+    /* 三单加 s：提示里写着「要加 s：likes」 */
+    let g = m.match(/要加 s：(\w+)/);
+    if (g) { const nw = g[1];
+      /* 别用「去掉词尾 s」反推原形——likes 会被切成 lik。
+         改成把两种可能的原形都拿去句子里找，找到哪个就替换哪个。 */
+      /* 不规则的（have→has）查表反推，规则的再按词尾去 s */
+      const cands = [THIRD_TO_BASE[nw], nw.replace(/ies$/, 'y'), nw.replace(/es$/, ''), nw.replace(/s$/, '')];
+      for (const b of cands) {
+        if (b && new RegExp('\\b' + b + '\\b').test(out)) { rep(new RegExp('\\b' + b + '\\b'), nw); break; }
+      }
+      return; }
+    /* 动词还原成原形：「动词还原成 go」「后面一律跟原形：go」 */
+    g = m.match(/还原成 <?b?>?(\w+)|跟原形：(\w+)/);
+    if (g) { const base = g[1] || g[2];
+      /* 规则变形直接按词尾找；不规则的（went / has）要反查动词表 */
+      let bad = out.match(new RegExp('\\b' + base + '(s|es|ed|ied)\\b', 'i'));
+      if (!bad) {
+        const tok = out.split(/\s+/).map(x => x.replace(/[^A-Za-z']/g, '').toLowerCase())
+          .find(x => THIRD_TO_BASE[x] === base || PAST_TO_BASE[x] === base);
+        if (tok) bad = [tok];
+      }
+      if (bad) rep(new RegExp('\\b' + bad[0] + '\\b', 'i'), base); return; }
+    /* a / an */
+    g = m.match(/冠词用 <?b?>?(an|a)\b/);
+    if (g) { const c = g[1];
+      rep(new RegExp('\\b' + (c === 'an' ? 'a' : 'an') + '\\s+', 'i'), c + ' '); return; }
+    /* 物主代词：「要用物主代词：your book」 */
+    g = m.match(/物主代词：<?b?>?([a-z]+) (\w+)/);
+    if (g) { rep(new RegExp('\\b\\w+\\s+' + g[2] + '\\b'), g[1] + ' ' + g[2]); return; }
+    /* be 动词：「I 配 am」「he 是单数，配 is」 */
+    g = m.match(/配 <?b?>?(am|is|are|was|were)\b/);
+    if (g) { rep(/\b(am|is|are|was|were)\b/i, g[1]); return; }
+    /* 不规则过去式：「要写成 went」 */
+    g = m.match(/要写成 <?b?>?(\w+)/);
+    if (g) { rep(/\b\w+ed\b/, g[1]); return; }
+    /* There is → There are */
+    g = m.match(/要用 <?b?>?There (are|were)/);
+    if (g) { rep(/\bThere\s+(is|was)\b/i, 'There ' + g[1]); return; }
+    /* like + 原形 → like doing */
+    g = m.match(/用 ing：(\w+) (\w+ing)/);
+    if (g) { rep(new RegExp('\\b' + g[1] + '\\s+\\w+\\b'), g[1] + ' ' + g[2]); return; }
+    /* 双重否定：去掉 don't / doesn't */
+    if (/双重否定/.test(x.why)) { rep(/\b(don't|doesn't|didn't|do not|does not|did not)\s+/i, ''); return; }
+    /* very + 动词 */
+    if (/very 不能直接/.test(x.why)) {
+      out = out.replace(/\bvery\s+(\w+)/i, '$1').replace(/([.!?])?$/, ' very much$1'); return; }
+    /* be + 动词原形：最稳的改法是去掉多余的 be（I am go → I go） */
+    if (/连在一起不对/.test(x.why)) {
+      const b = x.why.replace(/<[^>]+>/g, '').match(/([a-z]+) [a-z]+ 连在一起/);
+      if (b) rep(new RegExp('\\b' + b[1] + '\\s+', 'i'), '');
+      return; }
+    /* 重复词 */
+    if (/写重复了/.test(x.why)) { rep(/\b(\w+)\s+\1\b/i, '$1'); return; }
+    /* although…but / because…so */
+    if (/不能同时出现/.test(x.why)) { rep(/,\s*(but|so)\s+/i, ', '); return; }
+  });
+  out = out.trim();
+  if (out) out = out.charAt(0).toUpperCase() + out.slice(1);          /* 句首大写 */
+  if (out && !/[.!?]$/.test(out)) out += '.';                          /* 句尾标点 */
+  out = out.replace(/\s+/g, ' ').replace(/\s+([,.!?])/g, '$1');
+  return out;
+}
 /* ========== 路由 ========== */
 let cur = { unit: null, sec: null, mode: null };
 function goBack() {
@@ -887,7 +976,15 @@ async function makeCheck() {
       '<div class="fb bad">这句有 <b>' + errs.length + '</b> 个地方要改：' +
         '<div class="eg" style="margin:8px 0;background:#fff">' + esc(s) + '</div>' +
         list(errs) + (warns.length ? list(warns) : '') +
-        '<div style="margin-top:8px;font-size:13.5px">📖 改完再按一次「检查」。也可以看看上面 3 个例句是怎么写的。</div>' +
+        (function () {                       /* 直接把改好的样子给他看，别让他猜 */
+          const fixed = autoFix(s, errs);
+          return (fixed && normSent(fixed) !== normSent(s)) ?
+            '<div style="margin-top:10px;font-size:14px">✍️ <b>改好应该是这样</b>：' +
+            '<div class="eg" style="margin-top:6px;background:#fff">' + esc(fixed) +
+            ' <button class="btn-mini" onclick="speak(' + JSON.stringify(fixed) + ')">🔊</button></div>' +
+            '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">照着改一遍再按「检查」，' +
+            '通过之后我会告诉你：同样的意思，欧美人平常会怎么说。</div></div>' : '';
+        })() +
       '</div>' +
       '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
       '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
@@ -897,26 +994,31 @@ async function makeCheck() {
     '<div class="fb ok">🎉 <b>语法检查通过！</b>拼写、大小写、标点、主谓一致、时态、冠词都没问题。' +
       (warns.length ? '<div style="margin-top:8px">还有一点小提醒（不算错）：</div>' + list(warns) : '') +
     '</div>';
+  const natHtml = nativeBlock(w);
   const acceptBtn = '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
-  if (!aiGetKey()) { $('#mkFb').innerHTML = passHtml + acceptBtn; return; }
+  if (!aiGetKey()) { $('#mkFb').innerHTML = passHtml + natHtml + acceptBtn; return; }
   /* 有 Key → 再做一层：意思通不通、搭配对不对 */
-  $('#mkFb').innerHTML = passHtml + '<div class="fb tip">⏳ 再让 AI 老师看一眼意思通不通…</div>';
+  $('#mkFb').innerHTML = passHtml + natHtml + '<div class="fb tip">⏳ 再让 AI 老师看一眼意思通不通…</div>';
   const r = await aiCheckSentence(w.w, s);
   if (!r || r.error) {                      /* AI 出问题不能影响孩子——语法结论照样算数 */
-    $('#mkFb').innerHTML = passHtml +
+    $('#mkFb').innerHTML = passHtml + natHtml +
       (r && r.error ? '<div class="fb tip">（' + esc(r.error) + '，语法检查的结论仍然有效）</div>' : '') +
       acceptBtn;
     return;
   }
   const betterHtml = r.better ?
-    '<div class="eg" style="margin-top:8px">🌟 <b>更地道的说法</b>：' + esc(r.better) +
-      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') + '</div>' : '';
+    '<div style="margin-top:10px;font-size:14px">🌟 <b>同样的意思，欧美人平常会这样说</b>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(r.better) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(r.better) + ')">🔊</button>' +
+      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
+    '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
+    '</div>' : '';
   if (r.ok) {
-    $('#mkFb').innerHTML = passHtml +
+    $('#mkFb').innerHTML = passHtml + natHtml +
       '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterHtml + '</div>' +
       acceptBtn;
   } else {
-    $('#mkFb').innerHTML = passHtml +
+    $('#mkFb').innerHTML = passHtml + natHtml +
       '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
         (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
         betterHtml + '</div>' +

@@ -76,12 +76,13 @@ def main():
 
             # ---- ① AI 说通过 ----
             go_make()
-            pg.evaluate(MOCK, [{"ok": True, "tip": "意思很清楚", "better": "Excuse me, may I ask you something?",
-                                "betterZh": "打扰一下，我能问你件事吗？"}, 200])
+            pg.evaluate(MOCK, [{"ok": True, "tip": "意思很清楚", "better": "Excuse me, could you give me a hand?",
+                                "betterZh": "打扰一下，能帮我个忙吗？", "diff": "把 help me 换成更常用的 give me a hand"}, 200])
             t = try_sent('Excuse me, can you help me now?')
             ck('语法层先给出通过', '语法检查通过' in t, t[-300:])
             ck('AI 说通过 → 显示意思也没问题', '意思也没问题' in t, t[-300:])
-            ck('显示更地道的说法', '更地道的说法' in t, t[-300:])
+            ck('显示欧美人的说法', '欧美人平常会这样说' in t, t[-400:])
+            ck('说清楚差在哪', '差在哪' in t and 'give me a hand' in t, t[-400:])
             ck('请求发到智谱端点', 'open.bigmodel.cn' in pg.evaluate("window.__aiUrl || ''"))
             ck('带上了 Key', 'test-key-123' in pg.evaluate("window.__aiAuth || ''"))
 
