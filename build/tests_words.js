@@ -10,6 +10,16 @@ ok(!!m, 'words.html 中能定位到 const DATA');
 const DATA = eval('(' + m[1] + ')');
 const words = DATA.units.flatMap(u => u.sections.flatMap(s => s.words));
 ok(Array.isArray(DATA.units) && DATA.units.length > 0, 'DATA 结构正确（含 units）');
+// ⭐ 撇号归一：iPad 的智能标点会把 ' 变成 ’，拼写判分必须当成同一个答案
+// （目前词表里没有带撇号的词，但加 o'clock / don't 那天就会踩，先锁死）
+(function () {
+  const nm = src.match(/function normalize\(t\) \{[\s\S]*?\n\}/);
+  if (!nm) { ok(false, '抽得出 normalize'); return; }
+  const normalize = new Function(nm[0] + '\nreturn normalize;')();
+  ok(normalize('don\u2019t') === normalize("don't"), '弯引号和直引号归一成同一个（拼对不能判错）');
+  ok(normalize('O\u2019clock') === normalize("o'clock"), "o'clock 大小写+撇号都归一");
+})();
+
 console.log(`     单元 ${DATA.units.length} / 节 ${DATA.units.reduce((a,u)=>a+u.sections.length,0)} / 单词 ${words.length}`);
 
 // --- 例句规则（和建置校验同一套，双保险）---

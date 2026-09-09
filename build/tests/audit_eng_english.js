@@ -123,5 +123,36 @@ DATA.chapters.forEach(c => c.sections.forEach(sec => (sec.quiz || []).forEach(q 
 })));
 console.log('  形如「某句是正确的」的判断题 ' + judged + ' 题，与引擎矛盾的：' + contradict + ' 题');
 
+// ---- ⑤ 跨章矛盾：同一句话不能这里判对、那里判错 ----
+console.log('--- ⑤ 同一个英文句子，不能在 A 题判对、B 题判错 ---');
+const norm = x => x.replace(/[\u2019']/g, "'").replace(/[.?!]+$/, '').toLowerCase().trim();
+const good = new Map(), bad = new Map();
+DATA.chapters.forEach(c => c.sections.forEach(sec => (sec.quiz || []).forEach(q => {
+  const stem = strip(q.stem), ans = [].concat(q.answer);
+  if (q.options && q.options.length) {
+    const asksCorrect = /正确/.test(stem) && !/不正确|错误/.test(stem);
+    const asksWrong = /错误|不正确/.test(stem);
+    q.options.forEach(o => {
+      const s2 = strip(o), L = s2.charAt(0), body = s2.replace(/^[A-E][.、．]\s*/, '').trim();
+      if (!isFullEn(body)) return;
+      const inA = ans.includes(L);
+      if (asksCorrect) (inA ? good : bad).set(norm(body), sec.id + ' ' + q.id + L);
+      if (asksWrong) (inA ? bad : good).set(norm(body), sec.id + ' ' + q.id + L);
+    });
+  }
+  if (q.type === 'judge') {
+    const m = stem.match(/^([A-Z][^。]*?[.?!])\s*(这句话?|这个句子)?\s*(是正确的|语法正确|是正确的英语表达)/);
+    if (m) (q.answer === '对' ? good : bad).set(norm(m[1].trim()), sec.id + ' ' + q.id);
+  }
+})));
+let conflict = 0;
+good.forEach((wg, k) => {
+  if (bad.has(k)) {
+    conflict++; fails++;
+    console.log('  🚨 「' + k + '」在 ' + wg + ' 判对，却在 ' + bad.get(k) + ' 判错');
+  }
+});
+console.log('  判对 ' + good.size + ' 句 / 判错 ' + bad.size + ' 句，矛盾 ' + conflict + ' 处');
+
 console.log(fails ? '\n❌ 失败 ' + fails + ' 项' : '\n✅ 英语题库的英文内容全部通过判分引擎复核');
 process.exit(fails ? 1 : 0);

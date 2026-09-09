@@ -30,6 +30,25 @@ const ERR = [
   ['If it will rain tomorrow, we will stay home.', 'if 条件句不用 will'],
   ['There are some bread on the table.', 'There are + 不可数'],
   ['He has joined the army for three years.', '短暂动词 + for'],
+  ['Tom and I am students.',              '复合主语要用 are'],
+  ['Tom and I was late.',                 '复合主语要用 were'],
+  // ⭐⭐ iPad 的智能标点会把 ' 变成 ’ —— 弯引号版本必须和直引号版本判得一模一样，
+  //     否则孩子在 iPad 上写的缩写句，所有相关规则会静默失效（零报错，最难查）
+  ['I don\u2019t never go there.',            '弯引号·双重否定'],
+  ['He doesn\u2019t likes coffee.',           '弯引号·doesn\u2019t 后要原形'],
+  ['Didn\u2019t he went home?',               '弯引号·didn\u2019t 后要原形'],
+  ["He can't swims.",                     "can't 后要原形"],
+  ['He can\u2019t swims.',                    '弯引号·can\u2019t 后要原形'],
+  ["She won't goes there.",               "won't 后要原形"],
+  // ⭐ 再一轮题库干扰项反查补的规则 R30-R32 ＋ 双重否定词表补全
+  ["I haven't never been there.",         'haven\u2019t + never 双重否定'],
+  ['You should to see a doctor.',         '情态动词后不能加 to'],
+  ['He must to go now.',                  '情态动词后不能加 to'],
+  ['He always is late.',                  '频度副词要在 be 后面'],
+  ['She never is happy.',                 '频度副词要在 be 后面'],
+  ['Its raining outside.',                "its → it's"],
+  // ⚠️ "The dog wags it's tail." 是已知漏报：抓它必然误伤 "I know it's Monday."，
+  //    规则分不出来，宁可漏报不可误报（见 grammar_en.js R32 注释）
   ['Excuse me, where is you book?',      '物主代词'],
   ['Is this you handbag?',               '物主代词'],
   ['This is me handbag on the table.',   '物主代词'],

@@ -16,7 +16,10 @@
 
 function normalize(t) {
   if (t === null || t === undefined) return '';
-  return String(t).trim().replace(/\s+/g, '').replace(/　/g, '').toLowerCase();
+  /* ⚠️ 撇号归一：iPad 打 don’t、答案存的是 don't，不归一就会把「拼对了」判成错。
+     目前词表里还没有带撇号的词（所以没触发过），但加 o'clock / don't 这类词的那天就会踩。 */
+  return String(t).trim().replace(/[\u2018\u2019\u02BC\u00B4\u0060]/g, "'")
+    .replace(/\s+/g, '').replace(/　/g, '').toLowerCase();
 }
 /* 造句用：保留词边界的归一 */
 function normSent(s) {
@@ -113,7 +116,10 @@ for (const b in VERB_FORMS) {
   if (VERB_FORMS[b][1]) PAST_TO_BASE[VERB_FORMS[b][1]] = b;
 }
 const BE_ALL = new Set(['am','is','are','was','were','be','been','being']);
-const MODALS = new Set(['can','could','will','would','shall','should','may','might','must']);
+const MODALS = new Set(['can','could','will','would','shall','should','may','might','must',
+  /* ⚠️ 否定缩写也是情态动词，漏了就抓不到 can't swims（撇号已由 fixApos 归一成直引号） */
+  "can't",'cannot','cant',"couldn't",'couldnt',"won't",'wont',"wouldn't",'wouldnt',
+  "shan't","shouldn't",'shouldnt',"mustn't",'mustnt',"mightn't",'mightnt',"needn't",'neednt']);
 const AUX_DO = new Set(['do','does','did',"don't",'dont',"doesn't",'doesnt',"didn't",'didnt']);
 /* 原形和过去式同形的动词：看到 She put… 无法判断是「漏了 s」还是「过去式」，
    一律不报错——宁可漏报，不可把对的判成错。 */
@@ -203,6 +209,14 @@ const ADV_NEEDED = { careful: 'carefully', quick: 'quickly', slow: 'slowly', qui
 const ADV_VERBS = new Set(['drive','drives','drove','sing','sings','sang','run','runs','ran',
   'walk','walks','walked','speak','speaks','spoke','write','writes','wrote','work','works','worked',
   'play','plays','played','dance','dances','danced','swim','swims','swam','read','reads','draw','draws','drew']);
+/* 名词性的 ing 词：its meaning / its building 是对的，不能当成 it's + 动词ing */
+const ING_NOUNS = new Set(['morning','evening','nothing','something','anything','everything',
+  'building','meaning','feeling','clothing','shopping','painting','writing','reading','ceiling','king','ring','wing','thing','spring','string']);
+/* 跟在 it's 后面几乎必错的名词（词表里没有的常见词，补进来） */
+const ITS_NOUNS = new Set(['tail','name','colour','color','size','head','leg','legs','eye','eyes',
+  'ear','ears','nose','mouth','body','back','top','end','side','price','owner','mother','father','food','home','door','window','handle','cover','shape','weight','height','age']);
+/* 频度副词：遇到 be 动词要放后面（He is always late.），遇到实义动词才放前面 */
+const FREQ_ADV = new Set(['always','often','usually','sometimes','never','seldom','rarely','normally']);
 /* 不可数名词：There are some bread… 里的 are 是错的 */
 const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information','news','homework',
   'furniture','luggage','advice','tea','coffee','juice','meat','paper','music','time','work','food',
@@ -252,14 +266,18 @@ function isVerbTok0(x) {
     (x.length > 3 && /(ed|ing)$/.test(x));
 }
 
+/* ⚠️⚠️ 撇号必须先归一：iPad / iPhone 的「智能标点」会把 ' 自动变成 ’，
+   不归一的话 don’t / doesn’t / didn’t / can’t 全都对不上规则里的 don't，
+   **孩子在 iPad 上写的句子，所有缩写相关的规则会静默失效**（零报错，最难查的那种）。 */
+function fixApos(s) { return String(s || '').replace(/[\u2018\u2019\u02BC\u00B4\u0060]/g, "'"); }
 function tokenize(s) {
-  return String(s || '').trim().split(/\s+/).map(t => t.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, ''))
+  return fixApos(s).trim().split(/\s+/).map(t => t.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, ''))
     .filter(Boolean);
 }
 /* 记录每个词后面有没有标点——跨标点的两个词不是一个词组，规则不能跨过去套。
    （thank you, sir. 里的「you , sir」不是「你的先生」） */
 function punctFlags(s) {
-  const parts = String(s || '').trim().split(/\s+/).filter(Boolean);
+  const parts = fixApos(s).trim().split(/\s+/).filter(Boolean);
   const flags = [];
   parts.forEach(p => { if (p.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, '')) flags.push(/[,;:.!?—-]$/.test(p)); });
   return flags;
@@ -293,14 +311,30 @@ function checkGrammar(sent) {
        ③ 疑问句倒装：Are you…? / Is he…? —— 这在 R4 之外由句首判断处理 */
     const prevW = i > 0 ? t[i - 1] : '';
     const perfectQ = nx === 'been' && ['have','has','had'].includes(prevW);
-    const beCompound = (i >= 1 && t[i - 1] === 'and') || (nx2 === 'and');
-    if (nx && BE_ALL.has(nx) && !perfectQ && !beCompound) {
-      if (SUBJ_I.has(w) && !['am','was'].includes(nx))
-        add('error', 'I 后面不能用 <b>' + nx + '</b>', 'I 配 <b>am</b>（过去式 was）：I <b>am</b> …');
-      if (SUBJ_3S.has(w) && !['is','was'].includes(nx))
-        add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是单数，配 <b>is</b>（过去式 was）');
-      if (SUBJ_PL.has(w) && !['are','were'].includes(nx))
-        add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是复数（you 也算），配 <b>are</b>（过去式 were）');
+    /* ⚠️ 复合主语（Tom and I）是复数，配 are/were——但**不能整个豁免**：
+       整个豁免会让「Tom and I am students.」也漏报（这是加豁免时自己引入的回归，
+       靠「用题库干扰项反查」才发现）。所以豁免只针对 are/were，其余照报。 */
+    /* ⚠️ 「Naoko is Japanese and she is very kind.」里的 and 接的是**第二个分句**，不是复合主语。
+       判据：and 之前如果已经出现过动词，那就是并列分句（全册例句自检抓到的误报）。 */
+    const beCompound = i >= 1 && t[i - 1] === 'and' &&
+      !t.slice(0, i - 1).some(x => BE_ALL.has(x) || isVerbTok(x));
+    if (nx && BE_ALL.has(nx) && !perfectQ) {
+      if (beCompound) {
+        /* ⚠️ 只在 and 后面是**代词**时才敢判「两个人」：
+           「The writer and teacher is here.」指的是同一个人（既是作家又是老师），is 完全正确——
+           规则分不出「同一人的两个身份」和「两个人」，所以只处理代词，名词一律不判（宁可漏报）。
+           这个误报是拿题库讲解里的句子反查出来的。 */
+        if ((SUBJ_I.has(w) || SUBJ_3S.has(w) || SUBJ_PL.has(w)) && ['am','is','was'].includes(nx))
+          add('error', '「… and ' + w + '」是两个人，后面要用 <b>' + (nx === 'was' ? 'were' : 'are') + '</b>',
+              '主语有两个（… and ' + w + '）就是复数：… and ' + w + ' <b>' + (nx === 'was' ? 'were' : 'are') + '</b> …');
+      } else {
+        if (SUBJ_I.has(w) && !['am','was'].includes(nx))
+          add('error', 'I 后面不能用 <b>' + nx + '</b>', 'I 配 <b>am</b>（过去式 was）：I <b>am</b> …');
+        if (SUBJ_3S.has(w) && !['is','was'].includes(nx))
+          add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是单数，配 <b>is</b>（过去式 was）');
+        if (SUBJ_PL.has(w) && !['are','were'].includes(nx))
+          add('error', w + ' 后面不能用 <b>' + nx + '</b>', w + ' 是复数（you 也算），配 <b>are</b>（过去式 were）');
+      }
     }
 
     /* R5 第三人称单数：he/she/it + 动词原形 → 要加 s
@@ -358,8 +392,9 @@ function checkGrammar(sent) {
       add('error', '<b>an ' + nx + '</b> 要改成 <b>a ' + nx + '</b>', nx + ' 读音以辅音开头，冠词用 <b>a</b>');
 
     /* R9 双重否定 */
-    if ((w === "don't" || w === 'dont' || w === "doesn't" || w === "didn't" || w === 'not') &&
-        nx && ['never','nothing','nobody','none'].includes(nx))
+    /* ⚠️ 否定词只列了 don't/doesn't/didn't → 「I haven't never been there.」漏报（题库干扰项反查发现） */
+    if (/^(don't|dont|doesn't|doesnt|didn't|didnt|not|haven't|havent|hasn't|hasnt|hadn't|hadnt|isn't|isnt|aren't|arent|wasn't|wasnt|weren't|werent|won't|wont|can't|cant|cannot|couldn't|couldnt|shouldn't|shouldnt)$/.test(w) &&
+        nx && ['never','nothing','nobody','none','nowhere','no'].includes(nx))
       add('error', '英语不能用双重否定', '把 <b>' + w + '</b> 去掉，只留 <b>' + nx + '</b>（它本身就是否定）');
 
     /* R10 very 不能直接修饰动词（ALSO_ADJ 里的词既是动词也是形容词，不报） */
@@ -479,7 +514,29 @@ function checkGrammar(sent) {
           '换成表示状态的说法：<b>' + w + ' ' + PUNCTUAL[base] + '</b> … for …');
     }
 
-    /* R20 宾格代词当主语：Me and Tom are friends. → Tom and I are friends.
+
+    /* R30 情态动词后面不能跟 to：You should to see a doctor. → should see */
+    if (MODALS.has(w) && nx === 'to' && nx2 && BASE_VERBS.has(nx2))
+      add('error', '<b>' + w + '</b> 后面不能加 <b>to</b>',
+          '情态动词直接跟动词原形：' + w + ' <b>' + nx2 + '</b> …');
+
+    /* R31 频度副词要放在 be 动词后面：He always is late. → He is always late. */
+    if (FREQ_ADV.has(w) && nx && BE_ALL.has(nx) && i > 0 &&
+        (SUBJ_I.has(t[i - 1]) || SUBJ_3S.has(t[i - 1]) || SUBJ_PL.has(t[i - 1])))
+      add('error', '<b>' + w + '</b> 要放在 be 动词 <b>' + nx + '</b> 的<b>后面</b>',
+          '频度副词遇到 be 动词要往后站：' + t[i - 1] + ' <b>' + nx + ' ' + w + '</b> …（实义动词才放前面）');
+
+    /* R32 its / it's 混用：Its raining. → It's raining；the dog wags it's tail → its tail
+       限死：its + 动词ing／it's + 纯名词，这两种情况百分之百是错的。 */
+    if (w === 'its' && nx && /ing$/.test(nx) && nx.length > 4 && !ING_NOUNS.has(nx))
+      add('error', '<b>its</b> 是「它的」，这里要用 <b>it\'s</b>（it is 的缩写）',
+          "改成 <b>It's " + nx + '</b>');
+    /* ⚠️ 反过来「it's → its」这条**故意不做**：
+       「The dog wags it's tail.」确实是错的，但要抓它就会误伤「I know it's Monday.」
+       （两者都是「句中 + it's + 名词」，规则分不出来）。
+       宁可漏报不可误报 —— 抓不准就不抓，这一类交给 AI 层或人。 */
+
+    /* R30 之前：R20 宾格代词当主语：Me and Tom are friends. → Tom and I are friends.
        限死：只在句首（i===0）报，句中的 me/him 都是宾语，正确。 */
     if (i === 0 && OBJ_PRON[w] && nx && (nx === 'and' || isVerbTok(nx)))
       add('error', '<b>' + w + '</b> 不能放在句子开头当主语',
@@ -743,7 +800,8 @@ function senseHits(s) {
 /* 把检查器查到的错自动改好，直接给孩子看「改好应该是这样」。
    只做有把握的替换（词形、冠词、大小写、标点），改不动的就不改。 */
 function autoFix(sent, issues) {
-  let out = String(sent);
+  /* 撇号先归一，否则 iPad 打出来的 don’t 改不动（正则里写的是直引号 don't） */
+  let out = fixApos(String(sent));
   const rep = (re, to) => { out = out.replace(re, to); };
   issues.forEach(x => {
     const m = String(x.fix).replace(/<[^>]+>/g, '');

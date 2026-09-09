@@ -12,6 +12,10 @@ const api = new Function('DATA', 'const GRAMMAR_WORDS = DATA.units.reduce((a,u)=
                          '\nreturn {checkGrammar, autoFix};')(eval('(' + data[1] + ')'));
 
 const CASES = [
+  // ⭐ iPad 的智能标点会把 ' 变成 ’，autoFix 也必须能改（否则「改好应该是这样」原样吐回来）
+  ['I don\u2019t never go there.',      'I never go there.'],
+  ['He doesn\u2019t likes coffee.',     "He doesn't like coffee."],
+  ['He can\u2019t swims.',              "He can't swim."],
   ['She have two brothers.',            'She has two brothers.'],
   ['He like apples very much.',         'He likes apples very much.'],
   ['My sister study English every day.','My sister studies English every day.'],

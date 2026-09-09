@@ -17,10 +17,15 @@ Does he can swim?    # e-c7-s4 · 选项
 Does he likes ?    # e-c3-s1 · 例句
 Does he likes coffee?    # e-c2-s4 · 例句
 Does he likes tea?    # e-c3-s1 · 选项
+He always is late.    # e-c3-s2 · 思考
 He asked where did I live .    # e-c6-s3 · 例句
 He asked where did I live.    # e-c6-s3 · 选项
 He can swims .    # e-c2-s4 · 例句
 He can swims.    # e-c2-s4 · 选项
+He didn’t went .    # e-c4-s1 · 例句
+He didn’t went to school.    # e-c4-s1 · 选项
+He doesn’t is a teacher.    # e-c2-s4 · 例句
+He doesn’t likes coffee.    # e-c2-s4 · 选项
 He drives careful.    # e-c7-s5 · 选项
 He has joined the army for three years.    # e-c4-s4 · 题干
 He is as taller as me.    # e-c5-s2 · 选项
@@ -34,7 +39,9 @@ He will goes there tomorrow.    # e-c5-s1 · 选项
 I am nurse.    # e-c1-s5 · 选项
 I am teacher .    # e-c1-s2 · 例句
 I don’t know what did you do.    # e-c6-s1 · 选项
+I don’t never go there.    # e-c3-s2 · 例句
 I have come here for ten years.    # e-c4-s4 · 例句
+I haven’t never been there.    # e-c4-s4 · 例句
 I know what did you do.    # e-c6-s4 · 选项
 I seen him yesterday.    # e-c7-s4 · 选项
 I seen him.    # e-c4-s3 · 例句
@@ -44,6 +51,8 @@ I very like this book.    # e-c4-s6 · 题干
 I want go home.    # e-c7-s4 · 例句
 If it will rain tomorrow, we won’t go out.    # e-c5-s1 · 题干
 If it will rain tomorrow, we won’t go.    # e-c5-s1 · 例句
+Its raining outside.    # e-c3-s6 · 选项
+Its raining.    # e-c3-s6 · 例句
 Me and Tom are friends.    # e-c7-s3 · 例句
 My job is teacher.    # e-c1-s2 · 选项
 Someone are at the door.    # e-c7-s3 · 选项
@@ -52,6 +61,9 @@ There are some water in the glass.    # e-c2-s1 · 例句
 These is my books.    # e-c1-s4 · 例句
 These is old cars.    # e-c1-s4 · 选项
 This are old cars.    # e-c1-s4 · 选项
+Tom and I am students.    # e-c1-s1 · 选项
 Where did he went last week?    # e-c7-s6 · 选项
 Whom did you saw?    # e-c6-s1 · 选项
+You should to see a doctor.    # e-c3-s3 · 例句
+You should to stay in bed.    # e-c3-s3 · 选项
 You was late.    # e-c4-s1 · 例句
