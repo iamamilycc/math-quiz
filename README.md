@@ -107,6 +107,9 @@ python3 build/tests_parity_grammar.py   # 两个站的判分引擎必须逐字�
 
 ⭐ **反过来，题库也是检查器最好的语料**。用 458 个干扰项反扫，抓出：
 - **3 类误报**（`Have you been…?` / `Tom and I are…` / `Which is bigger, A or B?`）—— 误报比漏报更伤
+- ⭐ **新语料 = 新的误报来源**：把精读站的雅思题库也拿来扫，又扫出 3 类误报
+  （`How important is sleep to you?` 倒装疑问句 / `and how can it be solved?` 并列疑问句 /
+  `Can it be solved?` 情态动词后的原形 be）—— 每接入一批新语料就再筛一轮
 - **一份漏报清单** → 补出规则 R20–R32（宾格当主语、过去分词单独当谓语、do+情态、as+比较级、
   职业名词缺冠词、形容词当副词、宾语从句语序、if 从句不用 will、There are+不可数、短暂动词+for、
   情态动词+to、频度副词位置、its/it's）＋双重否定词表补全

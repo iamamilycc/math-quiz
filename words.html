@@ -362,6 +362,8 @@ const UNCOUNTABLE = new Set(['bread','water','milk','rice','money','information'
 const PUNCTUAL = { join: 'be in', buy: 'have', die: 'be dead', come: 'be here', go: 'be away',
   arrive: 'be here', begin: 'be on', start: 'be on', finish: 'be over', leave: 'be away',
   borrow: 'keep', marry: 'be married', open: 'be open', close: 'be closed', get: 'have' };
+/* 句首疑问词：这类句子是倒装的，be 后面跟的是主语不是动词 */
+const WH_START = new Set(['what','how','where','when','who','whom','which','why','whose']);
 /* 疑问词：出现在句中（宾语从句）时后面要用陈述语序 */
 const WH_WORDS = new Set(['what','where','when','who','whom','which','how','why','whose']);
 /* ⚠️ her / his / its 本身就能当物主代词（her coat 是对的），绝不能列进来，
@@ -453,9 +455,11 @@ function checkGrammar(sent) {
        靠「用题库干扰项反查」才发现）。所以豁免只针对 are/were，其余照报。 */
     /* ⚠️ 「Naoko is Japanese and she is very kind.」里的 and 接的是**第二个分句**，不是复合主语。
        判据：and 之前如果已经出现过动词，那就是并列分句（全册例句自检抓到的误报）。 */
+    /* ⚠️ 情态动词后面的 be 是原形，不参与主谓一致：「Can it be solved?」「It must be true.」 */
+    const modalBe = nx === 'be' && i > 0 && MODALS.has(t[i - 1]);
     const beCompound = i >= 1 && t[i - 1] === 'and' &&
       !t.slice(0, i - 1).some(x => BE_ALL.has(x) || isVerbTok(x));
-    if (nx && BE_ALL.has(nx) && !perfectQ) {
+    if (nx && BE_ALL.has(nx) && !perfectQ && !modalBe) {
       if (beCompound) {
         /* ⚠️ 只在 and 后面是**代词**时才敢判「两个人」：
            「The writer and teacher is here.」指的是同一个人（既是作家又是老师），is 完全正确——
@@ -514,7 +518,12 @@ function checkGrammar(sent) {
 
     /* R7 be + 动词原形（缺 ing 或多余的 be）
        ⚠️ 排除既是形容词的词：The shop is open… / The door is shut… 都是对的 */
-    if (BE_ALL.has(w) && nx && BASE_VERBS.has(nx) && !ALSO_ADJ.has(nx) &&
+    /* ⚠️ 倒装疑问句里 be 后面跟的是**主语**不是动词：
+       「How important is sleep to you?」里 sleep 是名词主语。
+       判据：句子以疑问词开头，且这个 be 前面不是主语代词 → 倒装，不报。 */
+    const invertedQ = WH_START.has(t[0]) &&
+      !(i > 0 && (SUBJ_I.has(t[i - 1]) || SUBJ_3S.has(t[i - 1]) || SUBJ_PL.has(t[i - 1])));
+    if (BE_ALL.has(w) && nx && BASE_VERBS.has(nx) && !ALSO_ADJ.has(nx) && !invertedQ &&
         !['be','been','being'].includes(nx) && !AUX_DO.has(nx))
       add('error', '<b>' + w + ' ' + nx + '</b> 连在一起不对',
           '要么去掉 <b>' + w + '</b>，要么把动词改成 ing：' + w + ' <b>' + nx.replace(/e$/, '') + 'ing</b>');
@@ -615,7 +624,8 @@ function checkGrammar(sent) {
     /* ⚠️ 前一个词后面有标点＝这是新的一句（Good morning, how are you? 里的 how 是独立问句），
        不是宾语从句——全册例句自检抓到的误报。 */
     /* ⚠️ 介词前置的疑问句是对的：To whom did you give it? / In which box is it? */
-    if (i > 0 && !pf[i - 1] && !PREPS.has(t[i - 1]) &&
+    /* ⚠️ 并列的第二个疑问句也是对的：「What causes it and how can it be solved?」 */
+    if (i > 0 && !pf[i - 1] && !PREPS.has(t[i - 1]) && !['and','or','but'].includes(t[i - 1]) &&
         WH_WORDS.has(w) && nx && (AUX_DO.has(nx) || BE_ALL.has(nx) || MODALS.has(nx)) &&
         nx2 && (SUBJ_I.has(nx2) || SUBJ_3S.has(nx2) || SUBJ_PL.has(nx2)))
       add('error', '<b>' + w + '</b> 引导的从句要用陈述语序，不能像问句那样倒装',
