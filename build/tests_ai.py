@@ -55,7 +55,8 @@ def main():
             # ---- 设置面板 ----
             btn('家长设置').click(); pg.wait_for_timeout(200)
             ck('设置面板打得开', 'AI 检查' in T() and '智谱 API Key' in T())
-            ck('说明写清楚了不填也能用', '不填也能正常用' in T(), T()[:200])
+            ck('说明写清楚了不填也能用', '不填照样能用' in T(), T()[:300])
+            ck('说明写清楚了规则能确定的不调 AI', '一律不调 AI' in T(), T()[:400])
             ck('说明写清楚了 Key 存哪里', '只存在' in T() and '这台设备' in T(), T()[:300])
             pg.fill('#aiKeyIn', 'test-key-123')
             btn('保存').click(); pg.wait_for_timeout(200)
@@ -117,12 +118,31 @@ def main():
                                 "betterZh": "他很喜欢这个借口。", "diff": "very like 改成 really like"}, 200])
             t = try_sent('He like this excuse very much.')
             ck('语法错照常给出改法', '少了 s' in t, t[-250:])
-            ck('语法错也不用 AI 就有母语者说法', '母语者会这样说' in t, t[-400:])
+            # excuse 配了「常用句型」，就给句型块；没配的词才退回课本原句 —— 两者必有其一
+            ck('语法错也不用 AI 就有母语者说法',
+               ('母语者会这样说' in t) or ('欧美人常这样用' in t), t[-400:])
             ck('语法错时也请了 AI', pg.evaluate("window.__aiCalls") == 1,
                'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
             ck('拿「改好的句子」去问 AI，不拿错句', 'He likes this excuse very much.' in
                (pg.evaluate("window.__aiBody") or ''), (pg.evaluate("window.__aiBody") or '')[-200:])
             ck('AI 的母语者说法也显示出来', 'He really likes this excuse.' in t, t[-400:])
+
+            # ---- ⑤b ⭐ 规则已经能百分之百确定时，绝不调 AI ----
+            # 语法错 + 命中中式搭配表：改法和地道说法规则都给得出，AI 没有插嘴的余地
+            go_make()
+            pg.evaluate(MOCK, [{"ok": True, "better": "AI SHOULD NOT BE CALLED"}, 200])
+            t = try_sent('I very like this excuse.')
+            ck('中式说法命中 → 一次都不调 AI', pg.evaluate("window.__aiCalls") == 0,
+               'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
+            ck('规则自己给出了地道说法', 'really like' in t, t[-400:])
+            ck('页面上没有出现 AI 的内容', 'AI SHOULD NOT BE CALLED' not in t)
+            # 语法全对、但说法不地道：同样由规则收口，不走 AI
+            go_make()
+            pg.evaluate(MOCK, [{"ok": True, "better": "AI SHOULD NOT BE CALLED"}, 200])
+            t = try_sent('Excuse me, I read a book everyday.')
+            ck('语法对但中式 → 也不调 AI', pg.evaluate("window.__aiCalls") == 0,
+               'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
+            ck('直接给出改好的整句', 'every day' in t, t[-400:])
 
             # ---- ⑥ 清除 Key 后回到纯规则 ----
             pg.evaluate("aiSetKey('')")

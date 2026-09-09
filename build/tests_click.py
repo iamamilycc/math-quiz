@@ -98,7 +98,9 @@ def main():
             btn('检查我的句子').click(); pg.wait_for_timeout(350)
             fb = pg.inner_text('#mkFb')
             ck('写错时给了「改好应该是这样」', '改好应该是这样' in fb, fb[:120])
-            ck('写错时也给了母语者说法（不用 AI Key）', '母语者会这样说' in fb, fb[:160])
+            # 有配「常用句型」的词给句型块，没配的给课本原句 —— 两者必有其一
+            ck('写错时也给了母语者说法（不用 AI Key）',
+               ('母语者会这样说' in fb) or ('欧美人常这样用' in fb), fb[:200])
             btn('这句先跳过').click(); pg.wait_for_timeout(250)
             book = pg.evaluate("JSON.parse(localStorage.getItem('mathquiz_wrongbook_v1')||'[]')")
             ck('同一个词合并成一条', len(book) == 1, len(book))

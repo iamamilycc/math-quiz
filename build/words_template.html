@@ -623,9 +623,12 @@ function openSettings() {
   const has = !!aiGetKey();
   $('#view').innerHTML =
     '<div class="stage"><div style="font-size:17px;font-weight:600;margin-bottom:6px">⚙️ 家长设置 · AI 检查</div>' +
-    '<div class="hint-box">造句这一关<b>本来就会检查语法</b>（免费、不需要联网设置），' +
-    '这里填的 AI 只是<b>再加一层</b>：判断句子的意思通不通、搭配对不对。<br>' +
-    '不填也能正常用，只是「I eat a book every day.」这种语法没错但意思荒谬的句子查不出来。</div>' +
+    '<div class="hint-box">造句这一关<b>本来就会自己判分</b>（免费、不需要联网设置），而且是三层：' +
+    '<b>①语法 ②意思说不通（吃书、喝桌子这类查表能确定的）③中式说法</b>（23 条搭配表，还会直接改好整句）。<br>' +
+    '这三层<b>凡是能百分之百确定的，一律不调 AI</b>——结论来自测过的规则，比概率模型可靠。<br>' +
+    '这里填的 AI 只补最后一小块：三层都没话说时，看一眼<b>意思通不通、有没有更地道的说法</b>' +
+    '（例如「I fly this excuse to school.」这种语法对、搭配表里也没有的怪句）。<br>' +
+    '<b>不填照样能用</b>，只是那一小块查不出来。</div>' +
     '<div style="margin:14px 0 6px;font-weight:600;font-size:14px">智谱 API Key' +
       (has ? '　<span style="color:#3e8e5a;font-size:13px">（已设置 ✓）</span>' : '') + '</div>' +
     '<input class="inp" id="aiKeyIn" type="password" autocomplete="off" placeholder="' +
@@ -658,59 +661,196 @@ function clearKey() { aiSetKey(''); openSettings(); }
 
 /* ========== 中式英语搭配表：语法没错，但欧美人不这么说 ==========
    ⭐ 这是造句写错时**不需要 AI 也一定给得出**的地道说法来源。
+   ⭐ 命中这里的条目 = 我们百分之百确定该怎么改，所以这种情况**不再调 AI**。
    铁律同语法检查器：宁可漏报，不可误报。所以每条都把词限死
    （open 只在 light/TV 这类电器上报，"open the door / open the book" 绝不能被判）。
-   加新条目前先自问：有没有一个正常句子会被它误伤？想得出就不要加。 */
+   加新条目前先自问：有没有一个正常句子会被它误伤？想得出就不要加。
+   每条自带 fix()：把整句改好交给孩子；exp 是它自己的期望结果，测试拿它当断言。 */
+function keepCase(m, rep) { return /^[A-Z]/.test(m) ? rep.charAt(0).toUpperCase() + rep.slice(1) : rep; }
+function swapVerb(m, map) { return keepCase(m, map[m.toLowerCase()] || m.toLowerCase()); }
 const COLLOC = [
-  { re: /\bopen\s+(?:the\s+|my\s+|a\s+|your\s+)?(?:light|lights|lamp|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
-    bad: 'open the light', good: 'turn on the light', zh: '开灯／开电视这类电器，英语用 turn on，不用 open（open 是「打开门、打开书」那种「翻开、拉开」）。' },
-  { re: /\bclose\s+(?:the\s+|my\s+|a\s+|your\s+)?(?:light|lights|lamp|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
-    bad: 'close the TV', good: 'turn off the TV', zh: '关电器用 turn off，不用 close。' },
-  { re: /\beat\s+(?:the\s+|some\s+|my\s+|your\s+)?(?:medicine|pill|pills)\b/i,
-    bad: 'eat medicine', good: 'take medicine', zh: '吃药是 take medicine，不说 eat。' },
-  { re: /\beat\s+(?:the\s+|some\s+|my\s+|your\s+)?soup\b/i,
-    bad: 'eat soup', good: 'have soup / drink soup', zh: '西餐的汤是喝的，一般说 have soup 或 drink soup。' },
-  { re: /\bvery\s+(?:like|likes|liked|love|loves|want|wants|miss|misses|enjoy|enjoys|thank|thanks)\b/i,
-    bad: 'I very like it.', good: 'I really like it. / I like it very much.', zh: 'very 不能直接修饰动词。要么把 very much 放句尾，要么改用 really。' },
-  { re: /\blisten\s+(?!to\b)(?:the\s+|some\s+)?(?:music|radio|song|songs|teacher|him|her|me)\b/i,
-    bad: 'listen music', good: 'listen to music', zh: 'listen 后面一定要跟 to 才能接听的东西。' },
-  { re: /\bgo\s+to\s+home\b/i,
-    bad: 'go to home', good: 'go home', zh: 'home 前面不加 to（同样的还有 go upstairs、go there）。' },
-  { re: /\breturn\s+back\b/i,
-    bad: 'return back', good: 'return / go back', zh: 'return 本身就有「回」的意思，再加 back 是重复。' },
-  { re: /\bdiscuss\s+about\b/i,
-    bad: 'discuss about', good: 'discuss / talk about', zh: 'discuss 后面直接跟内容，不加 about。' },
+  { re: /\bopen(?:s|ed|ing)?\s+(?:the\s+|my\s+|a\s+|your\s+|his\s+|her\s+)?(?:light|lights|lamp|lamps|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
+    bad: 'Please open the light.', good: 'turn on the light',
+    zh: '开灯、开电视这类电器，英语用 turn on，不用 open（open 是「打开门、翻开书」那种拉开、翻开）。',
+    fix: s => s.replace(/\bopen(s|ed|ing)?\b(?=\s+(?:the\s+|my\s+|a\s+|your\s+|his\s+|her\s+)?(?:light|lights|lamp|lamps|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b)/i,
+      m => swapVerb(m, { open: 'turn on', opens: 'turns on', opened: 'turned on', opening: 'turning on' })),
+    exp: 'Please turn on the light.' },
+  { re: /\bclos(?:e|es|ed|ing)\s+(?:the\s+|my\s+|a\s+|your\s+|his\s+|her\s+)?(?:light|lights|lamp|lamps|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
+    bad: 'Please close the TV.', good: 'turn off the TV',
+    zh: '关电器用 turn off，不用 close（close 是关门、合上书本）。',
+    fix: s => s.replace(/\bclos(e|es|ed|ing)\b(?=\s+(?:the\s+|my\s+|a\s+|your\s+|his\s+|her\s+)?(?:light|lights|lamp|lamps|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b)/i,
+      m => swapVerb(m, { close: 'turn off', closes: 'turns off', closed: 'turned off', closing: 'turning off' })),
+    exp: 'Please turn off the TV.' },
+  { re: /\b(?:eat|eats|ate|eating)\s+(?:the\s+|some\s+|my\s+|your\s+|his\s+|her\s+)?(?:medicine|pill|pills)\b/i,
+    bad: 'I eat medicine every morning.', good: 'take medicine',
+    zh: '吃药是 take medicine，不说 eat。',
+    fix: s => s.replace(/\b(eat|eats|ate|eating)\b(?=\s+(?:the\s+|some\s+|my\s+|your\s+|his\s+|her\s+)?(?:medicine|pill|pills)\b)/i,
+      m => swapVerb(m, { eat: 'take', eats: 'takes', ate: 'took', eating: 'taking' })),
+    exp: 'I take medicine every morning.' },
+  { re: /\b(?:eat|eats|ate|eating)\s+(?:the\s+|some\s+|my\s+|your\s+|his\s+|her\s+)?soup\b/i,
+    bad: 'I eat soup for lunch.', good: 'have soup / drink soup',
+    zh: '西餐的汤是喝的，一般说 have soup 或 drink soup。',
+    fix: s => s.replace(/\b(eat|eats|ate|eating)\b(?=\s+(?:the\s+|some\s+|my\s+|your\s+|his\s+|her\s+)?soup\b)/i,
+      m => swapVerb(m, { eat: 'have', eats: 'has', ate: 'had', eating: 'having' })),
+    exp: 'I have soup for lunch.' },
+  { re: /\bvery\s+(?:like|likes|liked|love|loves|loved|want|wants|wanted|miss|misses|missed|enjoy|enjoys|enjoyed|thank|thanks|thanked)\b/i,
+    bad: 'I very like this book.', good: 'really like / like … very much',
+    zh: 'very 不能直接修饰动词。要么把 very much 放句尾，要么改用 really。',
+    fix: s => s.replace(/\bvery\s+(?=(?:like|likes|liked|love|loves|loved|want|wants|wanted|miss|misses|missed|enjoy|enjoys|enjoyed|thank|thanks|thanked)\b)/i,
+      m => keepCase(m, 'really ')),
+    exp: 'I really like this book.' },
+  { re: /\blisten(?:s|ed|ing)?\s+(?!to\b)(?:the\s+|some\s+)?(?:music|radio|song|songs|teacher|him|her|me|you|them)\b/i,
+    bad: 'I listen music every day.', good: 'listen to music',
+    zh: 'listen 后面一定要跟 to 才能接听的东西（look 也一样要 at）。',
+    fix: s => s.replace(/\blisten(s|ed|ing)?\b(?=\s+(?!to\b)(?:the\s+|some\s+)?(?:music|radio|song|songs|teacher|him|her|me|you|them)\b)/i, m => m + ' to'),
+    exp: 'I listen to music every day.' },
+  { re: /\bgo(?:es|ing|ne)?\s+to\s+home\b/i,
+    bad: 'I go to home at six.', good: 'go home',
+    zh: 'home 前面不加 to（同样的还有 go there、go upstairs）。',
+    fix: s => s.replace(/\b(go|goes|going|gone|went)\s+to\s+home\b/i, m => m.replace(/\s+to\s+/i, ' ')),
+    exp: 'I go home at six.' },
+  { re: /\bgo(?:es|ing)?\s+to\s+shopping\b/i,
+    bad: 'We go to shopping on Sunday.', good: 'go shopping',
+    zh: 'go 后面直接跟 shopping / swimming / fishing，中间不要 to。',
+    fix: s => s.replace(/\b(go|goes|going|went)\s+to\s+shopping\b/i, m => m.replace(/\s+to\s+/i, ' ')),
+    exp: 'We go shopping on Sunday.' },
+  { re: /\breturn(?:s|ed|ing)?\s+back\b/i,
+    bad: 'He returned back to school.', good: 'return / go back',
+    zh: 'return 本身就有「回」的意思，再加 back 是重复。',
+    fix: s => s.replace(/\b(return|returns|returned|returning)\s+back\b/i, '$1'),
+    exp: 'He returned to school.' },
+  { re: /\bdiscuss(?:es|ed|ing)?\s+about\b/i,
+    bad: 'We discussed about the film.', good: 'discuss / talk about',
+    zh: 'discuss 后面直接跟内容，不加 about（要用 about 就换成 talk about）。',
+    fix: s => s.replace(/\b(discuss|discusses|discussed|discussing)\s+about\b/i, '$1'),
+    exp: 'We discussed the film.' },
   { re: /\bbig\s+rain\b/i,
-    bad: 'big rain', good: 'heavy rain', zh: '雨大用 heavy，不用 big。' },
+    bad: 'There was a big rain yesterday.', good: 'heavy rain',
+    zh: '雨大用 heavy，不用 big。',
+    fix: s => s.replace(/\bbig(?=\s+rain\b)/i, m => keepCase(m, 'heavy')),
+    exp: 'There was a heavy rain yesterday.' },
   { re: /\bbig\s+wind\b/i,
-    bad: 'big wind', good: 'strong wind', zh: '风大用 strong，不用 big。' },
-  { re: /\bplay\s+the\s+(?:basketball|football|soccer|tennis|volleyball|baseball|chess|cards)\b/i,
-    bad: 'play the basketball', good: 'play basketball', zh: '球类、棋牌前面不加 the（乐器才加：play the piano）。' },
-  { re: /\bmake\s+(?:my\s+|his\s+|her\s+|your\s+|the\s+)?homework\b/i,
-    bad: 'make homework', good: 'do homework', zh: '做作业是 do homework，不用 make。' },
+    bad: 'There was a big wind last night.', good: 'strong wind',
+    zh: '风大用 strong，不用 big。',
+    fix: s => s.replace(/\bbig(?=\s+wind\b)/i, m => keepCase(m, 'strong')),
+    exp: 'There was a strong wind last night.' },
+  { re: /\bplay(?:s|ed|ing)?\s+the\s+(?:basketball|football|soccer|tennis|volleyball|baseball|chess|cards)\b/i,
+    bad: 'They play the basketball after school.', good: 'play basketball',
+    zh: '球类、棋牌前面不加 the（乐器才加：play the piano）。',
+    fix: s => s.replace(/\b(play|plays|played|playing)\s+the\s+(?=(?:basketball|football|soccer|tennis|volleyball|baseball|chess|cards)\b)/i, '$1 '),
+    exp: 'They play basketball after school.' },
+  { re: /\bmak(?:e|es|ing)\s+(?:my\s+|his\s+|her\s+|your\s+|our\s+|their\s+|the\s+)?homework\b|\bmade\s+(?:my\s+|his\s+|her\s+|your\s+|our\s+|their\s+|the\s+)?homework\b/i,
+    bad: 'I make my homework after school.', good: 'do homework',
+    zh: '做作业是 do homework，不用 make。',
+    fix: s => s.replace(/\b(make|makes|made|making)\b(?=\s+(?:my\s+|his\s+|her\s+|your\s+|our\s+|their\s+|the\s+)?homework\b)/i,
+      m => swapVerb(m, { make: 'do', makes: 'does', made: 'did', making: 'doing' })),
+    exp: 'I do my homework after school.' },
   { re: /\bmy\s+family\s+(?:has|have)\s+(?:one|two|three|four|five|six|seven|\d+)\b/i,
-    bad: 'My family has four people.', good: 'There are four people in my family.', zh: '说家里几口人，英语习惯用 There are … in my family。' },
+    bad: 'My family has four people.', good: 'There are four people in my family.',
+    zh: '说家里几口人，英语习惯用 There are … in my family。' },
   { re: /\b(?:the\s+)?price\s+(?:is|was)\s+(?:very\s+|so\s+|too\s+)?(?:expensive|cheap)\b/i,
-    bad: 'The price is expensive.', good: 'The price is high. / It’s expensive.', zh: '贵的是「东西」不是「价格」；说价格要用 high / low。' },
-  { re: /\bmore\s+(?:better|worse|bigger|smaller|taller|happier|easier)\b/i,
-    bad: 'more better', good: 'better', zh: '比较级不能再加 more，一个句子里只比一次。' },
-  { re: /\bwatch\s+(?:a\s+|the\s+|my\s+|your\s+)?(?:book|books|newspaper|magazine)\b/i,
-    bad: 'watch a book', good: 'read a book', zh: '书报杂志是 read，watch 用在电视、比赛这种「动着看」的东西。' },
+    bad: 'The price is very expensive.', good: 'The price is high. / It is expensive.',
+    zh: '贵的是「东西」不是「价格」；说价格要用 high / low。',
+    fix: s => s.replace(/((?:the\s+)?price\s+(?:is|was)\s+(?:very\s+|so\s+|too\s+)?)(expensive|cheap)\b/i,
+      (m, a, b) => a + (b.toLowerCase() === 'expensive' ? 'high' : 'low')),
+    exp: 'The price is very high.' },
+  { re: /\bmore\s+(?:better|worse|bigger|smaller|taller|shorter|happier|easier|older|younger)\b/i,
+    bad: 'This book is more better.', good: 'better',
+    zh: '比较级不能再加 more，一个句子里只比一次。',
+    fix: s => s.replace(/\bmore\s+(?=(?:better|worse|bigger|smaller|taller|shorter|happier|easier|older|younger)\b)/i, ''),
+    exp: 'This book is better.' },
+  { re: /\bwatch(?:es|ed|ing)?\s+(?:a\s+|the\s+|my\s+|your\s+|his\s+|her\s+)?(?:book|books|newspaper|newspapers|magazine|magazines)\b/i,
+    bad: 'I watch a book every night.', good: 'read a book',
+    zh: '书报杂志是 read，watch 用在电视、比赛这种「动着看」的东西。',
+    fix: s => s.replace(/\b(watch|watches|watched|watching)\b(?=\s+(?:a\s+|the\s+|my\s+|your\s+|his\s+|her\s+)?(?:book|books|newspaper|newspapers|magazine|magazines)\b)/i,
+      m => swapVerb(m, { watch: 'read', watches: 'reads', watched: 'read', watching: 'reading' })),
+    exp: 'I read a book every night.' },
+  { re: /\bjoin(?:s|ed|ing)?\s+in\s+(?:the\s+|a\s+|our\s+|my\s+|his\s+|her\s+)?(?:club|team|army|company|school|class)\b/i,
+    bad: 'I want to join in the club.', good: 'join the club',
+    zh: '加入组织用 join，不加 in（join in 是「参加某个活动」，如 join in the game）。',
+    fix: s => s.replace(/\b(join|joins|joined|joining)\s+in\s+(?=(?:the\s+|a\s+|our\s+|my\s+|his\s+|her\s+)?(?:club|team|army|company|school|class)\b)/i, '$1 '),
+    exp: 'I want to join the club.' },
+  { re: /\barriv(?:e|es|ed|ing)\s+to\b/i,
+    bad: 'We arrived to school late.', good: 'arrive at / arrive in',
+    zh: 'arrive 后面用 at（小地方）或 in（大城市），不用 to。',
+    fix: s => s.replace(/\b(arrive|arrives|arrived|arriving)\s+to\b/i, '$1 at'),
+    exp: 'We arrived at school late.' },
+  { re: /\b(?:I|he|she|we|they|you)\s+(?:am|is|are|was|were)\s+(?:very\s+|so\s+|really\s+)?(?:boring|interesting|exciting|surprising|tiring)\b/i,
+    bad: 'I am very boring today.', good: 'I am very bored today.',
+    zh: '人的感受用 -ed（bored 无聊、interested 感兴趣）；-ing 是形容事物（The film is boring 电影很无聊）。',
+    fix: s => s.replace(/\b(boring|interesting|exciting|surprising|tiring)\b/i,
+      m => keepCase(m, { boring: 'bored', interesting: 'interested', exciting: 'excited', surprising: 'surprised', tiring: 'tired' }[m.toLowerCase()])),
+    exp: 'I am very bored today.' },
+  { re: /\beveryday\s*(?=[.,!?]|$)/i,
+    bad: 'I read a book everyday.', good: 'every day',
+    zh: '「每天」是两个词 every day；everyday 是形容词「日常的」，要跟名词（everyday English 日常英语）。',
+    fix: s => s.replace(/\beveryday(?=\s*(?:[.,!?]|$))/i, m => keepCase(m, 'every day')),
+    exp: 'I read a book every day.' },
   { re: /^\s*how\s+to\s+say\b/i,
-    bad: 'How to say it in English?', good: 'How do you say it in English? / What’s this in English?', zh: '英语的疑问句要有主语，不能直接用 How to say。' }
+    bad: 'How to say it in English?', good: 'How do you say it in English?',
+    zh: '英语的疑问句要有主语，不能直接用 How to say。',
+    fix: s => s.replace(/^(\s*)how\s+to\s+say\b/i, '$1How do you say'),
+    exp: 'How do you say it in English?' }
 ];
 function collocHits(s) { return COLLOC.filter(c => c.re.test(String(s))); }
+/* ⭐ 一定要回显**孩子自己句子里的那一段**，不能拿规则表里的例句充数——
+   他写的是 excuse，你却给他看 book，他只会更糊涂。 */
+function hitText(c, s) { const m = String(s).match(c.re); return m ? m[0] : c.bad; }
+/* 把命中的中式说法全部改好，交出一整句（改不动的条目跳过） */
+function collocFix(s) {
+  let o = String(s);
+  COLLOC.forEach(c => { if (c.fix && c.re.test(o)) o = c.fix(o); });
+  return o;
+}
 function collocHtml(s) {
   const hits = collocHits(s);
   if (!hits.length) return '';
   return '<div class="fb tip" style="margin-top:10px">🌟 <b>这句里有中式英语的说法</b>' +
     hits.map(h => '<div style="margin-top:8px;font-size:14px">' +
-      '<span style="color:#c0392b">✗ ' + esc(h.bad) + '</span>　→　' +
+      '<span style="color:#c0392b">✗ 你写的「' + esc(hitText(h, s)) + '」</span>　→　' +
       '<b style="color:#3e8e5a">✓ ' + esc(h.good) + '</b>' +
       ' <button class="btn-mini" onclick="speak(' + JSON.stringify(h.good.split(' / ')[0]) + ')">🔊</button>' +
       '<div style="color:#8a7fa8;font-size:13px;margin-top:3px">' + esc(h.zh) + '</div></div>').join('') +
     '</div>';
 }
+/* ========== 意思说不通：规则能百分之百确定的那一小块 ==========
+   「意思通不通」大部分要靠 AI，但有一类是查表就能确定的：吃/喝一个明显不能吃不能喝的东西。
+   这类判出来一定对，所以命中就直接给结论，不用调 AI。
+   同样宁可漏报：只放明确无生命、明确非食物的具体名词，动物、植物一律不放。 */
+const INEDIBLE = ['book','books','pen','pens','pencil','pencils','car','cars','bus','buses','desk','desks',
+  'chair','chairs','table','tables','bag','bags','box','boxes','shoe','shoes','sock','socks','clock','clocks',
+  'radio','television','tv','computer','computers','door','doors','window','windows','house','houses','room',
+  'dress','dresses','coat','coats','hat','hats','shirt','shirts','watch','watches','phone','telephone',
+  'bike','bicycle','plane','ship','train','key','keys','ticket','tickets','money','paper','newspaper',
+  'newspapers','magazine','magazines','letter','letters','picture','pictures','photo','photos','tree','trees',
+  'flower','flowers','school','office','shop','bed','beds','umbrella','camera','stamp','stamps'];
+const NOT_DRINKABLE = INEDIBLE.concat(['bread','rice','meat','apple','apples','cake','cakes','egg','eggs',
+  'fish','banana','bananas','biscuit','biscuits','sandwich','sandwiches','chocolate','sweet','sweets']);
+/* 该用哪个动词才对 —— 有把握的才给，给不出就只说「说不通」 */
+const RIGHT_VERB = { book:'read', books:'read', newspaper:'read', newspapers:'read', magazine:'read',
+  magazines:'read', letter:'read', letters:'read', television:'watch', tv:'watch', film:'watch',
+  radio:'listen to', picture:'look at', pictures:'look at', photo:'look at', photos:'look at' };
+function senseHits(s) {
+  const out = [];
+  const det = '(?:a|an|the|my|your|his|her|our|their|this|that|some|two|three|four|five)?\\s*';
+  const scan = (verbs, nouns, kind) => {
+    nouns.forEach(n => {
+      const re = new RegExp('\\b(' + verbs + ')\\s+' + det + '\\b' + n + '\\b', 'i');
+      if (re.test(s)) {
+        const v = RIGHT_VERB[n];
+        out.push({ why: '「' + kind + ' ' + n + '」意思上说不通：' + n + ' 不能' + (kind === 'eat' ? '吃' : '喝') + '。',
+                   fix: v ? '想说的如果是「' + (v === 'read' ? '看书／看报' : v === 'watch' ? '看电视' : v === 'listen to' ? '听' : '看') +
+                            '」，动词要用 <b>' + v + '</b>：' + v + ' ' + (n === 'radio' ? 'the radio' : 'a ' + n) + '。'
+                          : '换一个真的能' + (kind === 'eat' ? '吃' : '喝') + '的东西，或者换一个合适的动词。' });
+      }
+    });
+  };
+  scan('eat|eats|ate|eating', INEDIBLE, 'eat');
+  scan('drink|drinks|drank|drinking', NOT_DRINKABLE, 'drink');
+  const seen = new Set();
+  return out.filter(o => { if (seen.has(o.why)) return false; seen.add(o.why); return true; });
+}
+
 /* 从这个词的课本例句里挑一句和孩子那句最接近的：课本例句是母语者写的、
    而且建置时全部过了检查器，所以「没有 AI Key 也一定有一句地道的可给」。 */
 const EG_STOP = new Set(['a','an','the','is','are','am','was','were','i','you','he','she','it','we','they',
@@ -735,7 +875,7 @@ function bookEgHtml(w, s) {
     '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">这是课本里的原句，照着它的句型换成你自己的事，就是地道的说法。</div></div>';
 }
 /* 造句写错时给的一整套地道说法（不需要 AI，一定给得出） */
-function nativeSuggest(w, s) { return collocHtml(s) + bookEgHtml(w, s) + nativeBlock(w); }
+function nativeSuggest(w, s) { const nb = nativeBlock(w); return collocHtml(s) + (nb || bookEgHtml(w, s)); }
 /* AI 给的「照着孩子那句改写成母语者的说法」——写对写错都会给 */
 function betterHtml(r) {
   if (!r || !r.better) return '';
@@ -1102,7 +1242,11 @@ async function makeCheck() {
   if (dup) {
     bad('这句和你前面造的「' + esc(dup) + '」太像了。<br>换个<b>角度</b>再想一句：换人（I→My brother）、换时间（今天→昨天）、换地方，或改成问句/否定句 💡'); return;
   }
-  /* 三道硬检查都过了 → 真正做语法判分（孩子没有判断能力，必须由系统给结论） */
+  /* ========== 三道硬检查都过了 → 判分 ==========
+     ⭐ 分层原则：**凡是规则能百分之百确定的，就由规则给结论，绝不调 AI。**
+     ① 语法错（确定）   ② 意思说不通·吃书喝桌子这类（确定）  ③ 中式说法（确定，且知道怎么改）
+     只有这三样都没话说时，才轮到 AI —— 它只负责规则做不到的那一小块（语义、地道度）。
+     这样既省额度，更重要的是：孩子看到的结论，绝大多数来自测过的确定性规则，而不是概率模型。 */
   window.__mkS = s;
   const issues = checkGrammar(s);
   const errs = issues.filter(x => x.level === 'error');
@@ -1110,11 +1254,26 @@ async function makeCheck() {
   const list = arr => '<ul class="chk">' + arr.map(x =>
       '<li>' + (x.level === 'error' ? '❌ ' : '💡 ') + x.why +
       '<br><span style="color:#c0392b;font-size:13.5px">→ ' + x.fix + '</span></li>').join('') + '</ul>';
+  const cHits = collocHits(s);        /* 说法不地道，而且我们知道该怎么改 */
+  const sHits = senseHits(s);         /* 意思说不通，而且我们确定 */
+  const sure = cHits.length > 0 || sHits.length > 0;   /* 规则已经有确定结论 → 不必问 AI */
+  const redoBtns =
+    '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
+    '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
+  /* 同一份内容两个抬头：语法本身就错的时候，不能写「语法没错，但…」，那句话会自相矛盾 */
+  const senseList = sHits.length ? '<ul class="chk">' + sHits.map(x => '<li>❌ ' + x.why +
+        '<br><span style="color:#c0392b;font-size:13.5px">→ ' + x.fix + '</span></li>').join('') + '</ul>' : '';
+  const senseHtmlErr = sHits.length ?
+    '<div class="fb bad">🤔 <b>另外，这句的意思也说不通</b>' + senseList + '</div>' : '';
+  const senseHtmlOk = sHits.length ?
+    '<div class="fb bad">🤔 <b>语法没错，但意思上说不通</b>' + senseList + '</div>' : '';
 
+  /* ① 语法有错 */
   if (errs.length) {
     /* ⭐ 写错了也要当场给地道说法——不能让孩子「改对了才配看母语者怎么说」。
-       顺序：错在哪 → 改好长这样 → 同样的意思欧美人怎么说。 */
-    const fixed = autoFix(s, errs);
+       顺序：错在哪 → 改好长这样 → 同样的意思欧美人怎么说。
+       改好的句子＝语法自动改 + 中式说法一起换掉，一次给到位。 */
+    const fixed = collocFix(autoFix(s, errs));
     const fixedOk = (fixed && normSent(fixed) !== normSent(s)) ? fixed : '';
     const errHtml =
       '<div class="fb bad">这句有 <b>' + errs.length + '</b> 个地方要改：' +
@@ -1127,35 +1286,61 @@ async function makeCheck() {
           '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">照着改一遍再按「检查」。' +
           '下面先看看同样的意思，欧美人平常会怎么说。</div></div>' : '') +
       '</div>';
-    const btns =
-      '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
-      '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
-    const natHtml = nativeSuggest(w, s);
-    $('#mkFb').innerHTML = errHtml + natHtml + btns;
-    /* 有 Key 再加一条量身的：拿「改好的句子」去问，AI 才不会被原句的语法错带偏 */
-    if (aiGetKey()) {
+    const natHtml = senseHtmlErr + nativeSuggest(w, s);
+    $('#mkFb').innerHTML = errHtml + natHtml + redoBtns;
+    /* 规则已经给出确定结论（中式说法／意思说不通）→ 不调 AI，省下的不是钱，是「让概率模型插嘴」的风险 */
+    if (aiGetKey() && !sure) {
       $('#mkFb').innerHTML = errHtml + natHtml +
-        '<div class="fb tip">⏳ 再让 AI 老师照着你这句，写一句欧美人会说的…</div>' + btns;
+        '<div class="fb tip">⏳ 再让 AI 老师照着你这句，写一句欧美人会说的…</div>' + redoBtns;
       const r2 = await aiCheckSentence(w.w, fixedOk || s);
       $('#mkFb').innerHTML = errHtml + natHtml +
         (r2 && r2.better ? '<div class="fb tip">' + betterHtml(r2) + '</div>' :
          (r2 && r2.error ? '<div class="fb tip">（' + esc(r2.error) + '，上面的说法仍然有效）</div>' : '')) +
-        btns;
+        redoBtns;
     }
     return;
   }
-  const passHtml =
+
+  const gramOkHtml =
     '<div class="fb ok">🎉 <b>语法检查通过！</b>拼写、大小写、标点、主谓一致、时态、冠词都没问题。' +
       (warns.length ? '<div style="margin-top:8px">还有一点小提醒（不算错）：</div>' + list(warns) : '') +
     '</div>';
-  const natHtml = collocHtml(s) + nativeBlock(w);
+
+  /* ② 语法对、但意思说不通（查表就能确定，不用问 AI） */
+  if (sHits.length) {
+    $('#mkFb').innerHTML = gramOkHtml + senseHtmlOk + (nativeBlock(w) || bookEgHtml(w, s)) + redoBtns;
+    return;
+  }
+
+  /* ③ 语法对、但说法不地道（命中搭配表 = 我们确定该怎么说，不用问 AI） */
+  if (cHits.length) {
+    const fixed = collocFix(s);
+    $('#mkFb').innerHTML = gramOkHtml +
+      '<div class="fb bad">🌏 <b>语法对，但欧美人不这么说</b>' +
+        '<ul class="chk">' + cHits.map(x => '<li>❌ 你写的「' + esc(hitText(x, s)) + '」' +
+          '<br><span style="color:#3e8e5a;font-size:13.5px">→ 应该说 <b>' + esc(x.good) + '</b></span>' +
+          '<br><span style="color:#8a7fa8;font-size:13px">' + esc(x.zh) + '</span></li>').join('') + '</ul>' +
+        (normSent(fixed) !== normSent(s) ?
+          '<div style="margin-top:10px;font-size:14px">✍️ <b>改好应该是这样</b>：' +
+          '<div class="eg" style="margin-top:6px;background:#fff">' + esc(fixed) +
+          ' <button class="btn-mini" onclick="speak(' + JSON.stringify(fixed) + ')">🔊</button></div></div>' : '') +
+      '</div>' + (nativeBlock(w) || bookEgHtml(w, s)) + redoBtns;
+    return;
+  }
+
+  /* ④ 规则全部通过 —— 到这里规则真的没话说了，才轮到 AI（可选） */
+  const natHtml = nativeBlock(w);
   const acceptBtn = '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
-  if (!aiGetKey()) { $('#mkFb').innerHTML = passHtml + natHtml + acceptBtn; return; }
-  /* 有 Key → 再做一层：意思通不通、搭配对不对 */
-  $('#mkFb').innerHTML = passHtml + natHtml + '<div class="fb tip">⏳ 再让 AI 老师看一眼意思通不通…</div>';
+  if (!aiGetKey()) {
+    $('#mkFb').innerHTML = gramOkHtml +
+      '<div class="fb tip">系统能确定的都查过了：语法、常见中式说法、意思说不通的搭配，全都没问题 ✅</div>' +
+      natHtml + acceptBtn;
+    return;
+  }
+  $('#mkFb').innerHTML = gramOkHtml + natHtml + '<div class="fb tip">⏳ 再让 AI 老师看一眼意思通不通…</div>';
   const r = await aiCheckSentence(w.w, s);
   if (!r || r.error) {                      /* AI 出问题不能影响孩子——语法结论照样算数 */
-    $('#mkFb').innerHTML = passHtml + natHtml +
+    $('#mkFb').innerHTML = gramOkHtml + natHtml +
       (r && r.error ? '<div class="fb tip">（' + esc(r.error) + '，语法检查的结论仍然有效）</div>' : '') +
       acceptBtn;
     return;
@@ -1165,11 +1350,11 @@ async function makeCheck() {
     '<div style="margin-top:8px;font-size:13px;color:#8a7fa8">（AI 这次给的示范句没通过语法检查，' +
     '已经拦下不显示——宁可少给一句，也不让你记住错的说法。）</div>' : '';
   if (r.ok) {
-    $('#mkFb').innerHTML = passHtml + natHtml +
+    $('#mkFb').innerHTML = gramOkHtml + natHtml +
       '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterBlk + dropNote + '</div>' +
       acceptBtn;
   } else {
-    $('#mkFb').innerHTML = passHtml + natHtml +
+    $('#mkFb').innerHTML = gramOkHtml + natHtml +
       '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
         (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
         betterBlk + dropNote + '</div>' +
