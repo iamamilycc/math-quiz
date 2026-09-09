@@ -111,13 +111,18 @@ def main():
             ck('401 提示 Key 无效', 'Key 无效' in t, t[-300:])
             ck('401 时仍能继续', '收下这一句' in t, t[-200:])
 
-            # ---- ⑤ 语法错的句子不该浪费 AI 调用 ----
+            # ---- ⑤ 语法写错时也要给母语者的说法（孩子最需要的就是这一刻）----
             go_make()
-            pg.evaluate(MOCK, [{"ok": True}, 200])
+            pg.evaluate(MOCK, [{"ok": True, "better": "He really likes this excuse.",
+                                "betterZh": "他很喜欢这个借口。", "diff": "very like 改成 really like"}, 200])
             t = try_sent('He like this excuse very much.')
-            ck('语法就错 → 不调 AI（省额度）', pg.evaluate("window.__aiCalls") == 0,
-               'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
             ck('语法错照常给出改法', '少了 s' in t, t[-250:])
+            ck('语法错也不用 AI 就有母语者说法', '母语者会这样说' in t, t[-400:])
+            ck('语法错时也请了 AI', pg.evaluate("window.__aiCalls") == 1,
+               'aiCalls=' + str(pg.evaluate("window.__aiCalls")))
+            ck('拿「改好的句子」去问 AI，不拿错句', 'He likes this excuse very much.' in
+               (pg.evaluate("window.__aiBody") or ''), (pg.evaluate("window.__aiBody") or '')[-200:])
+            ck('AI 的母语者说法也显示出来', 'He really likes this excuse.' in t, t[-400:])
 
             # ---- ⑥ 清除 Key 后回到纯规则 ----
             pg.evaluate("aiSetKey('')")

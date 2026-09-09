@@ -31,6 +31,7 @@ vi build/words_u1.py          # 改哪个单元就改哪个文件
 python3 build/build_words.py  # 体检 + 生成 words.html
 node   build/tests_words.js   # 数据与页面断言
 node   build/tests_grammar.js # 造句语法检查器（错句必抓 / 正确句零误报）
+node   build/tests_native.js  # 中式英语搭配表 + 课本例句推荐（零误报）
 python3 build/tests_click.py  # 真点击端到端走查（需要 playwright）
 ```
 
@@ -39,6 +40,8 @@ python3 build/tests_click.py  # 真点击端到端走查（需要 playwright）
 ```bash
 python3 build/build_eng.py   && node build/test_eng.js
 python3 build/build_words.py && node build/tests_words.js && node build/tests_grammar.js
+node    build/tests_autofix.js          # 写错时的自动改正
+node    build/tests_native.js           # 写错时的地道说法（不依赖 AI Key）
 python3 build/tests/audit_eng.py        # 英语题库深度自审
 node    build/tests/walkthrough_eng.js  # 使用者视角走查
 python3 build/tests/inject_rules.py     # 故障注入：确认建置规则真的会变红
@@ -76,6 +79,25 @@ python3 build/tests_parity.py           # 建置端与造句端的用词规则�
 不规则过去式、There is→are、双重否定、very 位置、重复词、连词重复、大小写、句尾标点。
 `tests_autofix.js` 两半都测：17 条错句要改对，7 条正确句一个字都不能被改动。
 
+### 写错时：同一时间给「欧美人平常会怎么说」
+
+⭐ **不能让孩子「改对了才配看母语者怎么说」** —— 他最想知道地道说法的时刻，就是刚写错那一刻。
+所以写错的反馈现在是三段：**错在哪 → 改好长这样 → 同样的意思欧美人会这样说**。
+
+地道说法这一层**不依赖 AI Key**，三个来源叠加：
+
+| 来源 | 内容 | 一定给得出？ |
+|---|---|---|
+| `COLLOC` 中式英语搭配表（18 条） | `open the light → turn on the light`、`very like → really like`、`eat medicine → take medicine`… 每条都说清为什么 | 命中才给 |
+| `closestEg` 课本原句 | 从这个词的 3 个例句里挑**和孩子那句共同词最多**的一句 —— 课本例句是母语者写的，且建置时全部过了检查器 | ✅ 一定有 |
+| `w.native` 常用句型 | 部分词额外配的「母语者习惯句型 + 例句 + 提示」 | 有配置才给 |
+| AI（可选） | 拿 **autoFix 改好的句子**去问（不拿错句去问，免得 AI 被语法错带偏），照着改写成母语者的说法 | 有 Key 才给 |
+
+`COLLOC` 的铁律和语法检查器一样：**宁可漏报，不可误报**。每条都把词限死 ——
+`open` 只在 light / TV / radio 这类电器上报，`open the door`、`open the book` 绝不能被判。
+`tests_native.js` 三半都测：每条规则要抓得到自己的反例、29 条正常说法零误报、
+**全册 1803 个例句零误报**（例句是母语者范句，被报就说明规则太宽）。
+
 ### 第二层：AI 检查（可选，补规则做不到的部分）
 
 规则查语法，AI 做两件规则做不到的事：
@@ -90,7 +112,8 @@ python3 build/tests_parity.py           # 建置端与造句端的用词规则�
   AI 会犯错、孩子看不出来，与其让他学到一句错的，不如这次少给一句。
   拦下时会明说原因，不会悄悄少一块。规则层是确定性的、测过的，用它给 AI 把关比信任 AI 可靠。
 - **不填也能正常用** —— 规则层的结论照样有效，只是查不出语义问题
-- **语法层没过就不调 AI**（省额度），AI 挂了/超时/Key 无效都不挡路，语法结论仍然有效
+- 语法写错时**也会调 AI**（拿改好的句子去问）—— 地道说法就是孩子这一刻最需要的；
+  AI 挂了/超时/Key 无效都不挡路，上面三段反馈照样完整
 - AI 可能误判，所以留了「我觉得这句没问题，收下」的人工出口
 - 🔒 **Key 只存在设备的 localStorage**，不进代码、不进仓库、只发给智谱本身。
   同一台设备上任何人都能在设置里看到它 —— 孩子的设备请用额度有限的 Key。
@@ -115,13 +138,13 @@ python3 build/tests_parity.py           # 建置端与造句端的用词规则�
 | `ARCH001` words.html 916 行超过 800 | **接受**。自包含单页应用，分了「基础／语法检查器／AI 层／路由／三种练法」五区，改哪块很清楚。语法检查器（约 280 行）将来若要给别的项目复用，再抽成 `assets/grammar-en.js`。 |
 | `BAK001` 找不到备份脚本 | **不适用**。内容全是纯文本 `build/*.py`，git + GitHub 就是备份，生成物随时可重建。 |
 | `SET001` 有上传缺导出 | **误报**。错题本有「📋 复制错题清单」导出。 |
-| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，10 支覆盖到位。 |
+| `TEST003` 模块没有同名测试 | **不适用**。测试按功能命名（tests_grammar / tests_resume / tests_ai…），不按模块名，12 支覆盖到位。 |
 | `DOC002` 找不到教程档 | **本文件就是**。体检只认特定文件名。 |
 
 ## 自查清单（每次改完照着走）
 
 1. `python3 build/build_words.py` —— 体检不过就不生成文件
-2. 10 支测试全绿（见上面「一次改完要跑的全套」）
+2. 12 支测试全绿（见上面「一次改完要跑的全套」）
 3. `python3 scripts/project_audit.py .` —— **P0 必须为 0**
 4. 真点击走查一遍（`tests_click.py` 已覆盖，改了 UI 要人工再点一次）
 5. `git push` 之后 **curl 线上地址断言到新内容** —— 本机绿 ≠ 孩子能用

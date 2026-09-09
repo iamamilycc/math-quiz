@@ -96,6 +96,9 @@ def main():
             # 用一句有语法错的：只有判错时才会出现「这句先跳过」，通过的句子本来就不该进错题本
             pg.fill('#mkIn', 'He like this excuse very much.')
             btn('检查我的句子').click(); pg.wait_for_timeout(350)
+            fb = pg.inner_text('#mkFb')
+            ck('写错时给了「改好应该是这样」', '改好应该是这样' in fb, fb[:120])
+            ck('写错时也给了母语者说法（不用 AI Key）', '母语者会这样说' in fb, fb[:160])
             btn('这句先跳过').click(); pg.wait_for_timeout(250)
             book = pg.evaluate("JSON.parse(localStorage.getItem('mathquiz_wrongbook_v1')||'[]')")
             ck('同一个词合并成一条', len(book) == 1, len(book))

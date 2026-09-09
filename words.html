@@ -656,6 +656,97 @@ function saveSettings() {
 }
 function clearKey() { aiSetKey(''); openSettings(); }
 
+/* ========== 中式英语搭配表：语法没错，但欧美人不这么说 ==========
+   ⭐ 这是造句写错时**不需要 AI 也一定给得出**的地道说法来源。
+   铁律同语法检查器：宁可漏报，不可误报。所以每条都把词限死
+   （open 只在 light/TV 这类电器上报，"open the door / open the book" 绝不能被判）。
+   加新条目前先自问：有没有一个正常句子会被它误伤？想得出就不要加。 */
+const COLLOC = [
+  { re: /\bopen\s+(?:the\s+|my\s+|a\s+|your\s+)?(?:light|lights|lamp|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
+    bad: 'open the light', good: 'turn on the light', zh: '开灯／开电视这类电器，英语用 turn on，不用 open（open 是「打开门、打开书」那种「翻开、拉开」）。' },
+  { re: /\bclose\s+(?:the\s+|my\s+|a\s+|your\s+)?(?:light|lights|lamp|tv|television|radio|computer|fan|air-conditioner|air conditioner)\b/i,
+    bad: 'close the TV', good: 'turn off the TV', zh: '关电器用 turn off，不用 close。' },
+  { re: /\beat\s+(?:the\s+|some\s+|my\s+|your\s+)?(?:medicine|pill|pills)\b/i,
+    bad: 'eat medicine', good: 'take medicine', zh: '吃药是 take medicine，不说 eat。' },
+  { re: /\beat\s+(?:the\s+|some\s+|my\s+|your\s+)?soup\b/i,
+    bad: 'eat soup', good: 'have soup / drink soup', zh: '西餐的汤是喝的，一般说 have soup 或 drink soup。' },
+  { re: /\bvery\s+(?:like|likes|liked|love|loves|want|wants|miss|misses|enjoy|enjoys|thank|thanks)\b/i,
+    bad: 'I very like it.', good: 'I really like it. / I like it very much.', zh: 'very 不能直接修饰动词。要么把 very much 放句尾，要么改用 really。' },
+  { re: /\blisten\s+(?!to\b)(?:the\s+|some\s+)?(?:music|radio|song|songs|teacher|him|her|me)\b/i,
+    bad: 'listen music', good: 'listen to music', zh: 'listen 后面一定要跟 to 才能接听的东西。' },
+  { re: /\bgo\s+to\s+home\b/i,
+    bad: 'go to home', good: 'go home', zh: 'home 前面不加 to（同样的还有 go upstairs、go there）。' },
+  { re: /\breturn\s+back\b/i,
+    bad: 'return back', good: 'return / go back', zh: 'return 本身就有「回」的意思，再加 back 是重复。' },
+  { re: /\bdiscuss\s+about\b/i,
+    bad: 'discuss about', good: 'discuss / talk about', zh: 'discuss 后面直接跟内容，不加 about。' },
+  { re: /\bbig\s+rain\b/i,
+    bad: 'big rain', good: 'heavy rain', zh: '雨大用 heavy，不用 big。' },
+  { re: /\bbig\s+wind\b/i,
+    bad: 'big wind', good: 'strong wind', zh: '风大用 strong，不用 big。' },
+  { re: /\bplay\s+the\s+(?:basketball|football|soccer|tennis|volleyball|baseball|chess|cards)\b/i,
+    bad: 'play the basketball', good: 'play basketball', zh: '球类、棋牌前面不加 the（乐器才加：play the piano）。' },
+  { re: /\bmake\s+(?:my\s+|his\s+|her\s+|your\s+|the\s+)?homework\b/i,
+    bad: 'make homework', good: 'do homework', zh: '做作业是 do homework，不用 make。' },
+  { re: /\bmy\s+family\s+(?:has|have)\s+(?:one|two|three|four|five|six|seven|\d+)\b/i,
+    bad: 'My family has four people.', good: 'There are four people in my family.', zh: '说家里几口人，英语习惯用 There are … in my family。' },
+  { re: /\b(?:the\s+)?price\s+(?:is|was)\s+(?:very\s+|so\s+|too\s+)?(?:expensive|cheap)\b/i,
+    bad: 'The price is expensive.', good: 'The price is high. / It’s expensive.', zh: '贵的是「东西」不是「价格」；说价格要用 high / low。' },
+  { re: /\bmore\s+(?:better|worse|bigger|smaller|taller|happier|easier)\b/i,
+    bad: 'more better', good: 'better', zh: '比较级不能再加 more，一个句子里只比一次。' },
+  { re: /\bwatch\s+(?:a\s+|the\s+|my\s+|your\s+)?(?:book|books|newspaper|magazine)\b/i,
+    bad: 'watch a book', good: 'read a book', zh: '书报杂志是 read，watch 用在电视、比赛这种「动着看」的东西。' },
+  { re: /^\s*how\s+to\s+say\b/i,
+    bad: 'How to say it in English?', good: 'How do you say it in English? / What’s this in English?', zh: '英语的疑问句要有主语，不能直接用 How to say。' }
+];
+function collocHits(s) { return COLLOC.filter(c => c.re.test(String(s))); }
+function collocHtml(s) {
+  const hits = collocHits(s);
+  if (!hits.length) return '';
+  return '<div class="fb tip" style="margin-top:10px">🌟 <b>这句里有中式英语的说法</b>' +
+    hits.map(h => '<div style="margin-top:8px;font-size:14px">' +
+      '<span style="color:#c0392b">✗ ' + esc(h.bad) + '</span>　→　' +
+      '<b style="color:#3e8e5a">✓ ' + esc(h.good) + '</b>' +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(h.good.split(' / ')[0]) + ')">🔊</button>' +
+      '<div style="color:#8a7fa8;font-size:13px;margin-top:3px">' + esc(h.zh) + '</div></div>').join('') +
+    '</div>';
+}
+/* 从这个词的课本例句里挑一句和孩子那句最接近的：课本例句是母语者写的、
+   而且建置时全部过了检查器，所以「没有 AI Key 也一定有一句地道的可给」。 */
+const EG_STOP = new Set(['a','an','the','is','are','am','was','were','i','you','he','she','it','we','they',
+  'my','your','his','her','its','our','their','me','him','them','to','of','in','on','at','and','or','but',
+  'this','that','these','those','do','does','did','not','very','with','for','have','has','had']);
+function closestEg(w, s) {
+  const toks = t => new Set(String(t).toLowerCase().match(/[a-z']+/g) || []);
+  const mine = toks(s); mine.delete(String(w.w).toLowerCase());
+  let best = w.egs[0], score = -1;
+  w.egs.forEach(e => {
+    let n = 0;
+    toks(e).forEach(t => { if (t !== String(w.w).toLowerCase() && !EG_STOP.has(t) && mine.has(t)) n++; });
+    if (n > score) { score = n; best = e; }
+  });
+  return best;
+}
+function bookEgHtml(w, s) {
+  const e = closestEg(w, s);
+  return '<div class="fb tip" style="margin-top:10px">📗 <b>同样用「' + esc(w.w) + '」，母语者会这样说</b>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(e) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(e) + ')">🔊</button></div>' +
+    '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">这是课本里的原句，照着它的句型换成你自己的事，就是地道的说法。</div></div>';
+}
+/* 造句写错时给的一整套地道说法（不需要 AI，一定给得出） */
+function nativeSuggest(w, s) { return collocHtml(s) + bookEgHtml(w, s) + nativeBlock(w); }
+/* AI 给的「照着孩子那句改写成母语者的说法」——写对写错都会给 */
+function betterHtml(r) {
+  if (!r || !r.better) return '';
+  return '<div style="margin-top:10px;font-size:14px">🌟 <b>同样的意思，欧美人平常会这样说</b>' +
+    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(r.better) +
+      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(r.better) + ')">🔊</button>' +
+      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
+    '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
+    '</div>';
+}
+
 /* 「欧美人常这样说」——孩子造完句之后给他看地道说法。
    规则层判语法、这一块给用法：同一个词，母语者习惯用哪个句型、搭配什么词。
    有 AI Key 时还会针对孩子那一句再给一条量身的。 */
@@ -1021,29 +1112,43 @@ async function makeCheck() {
       '<br><span style="color:#c0392b;font-size:13.5px">→ ' + x.fix + '</span></li>').join('') + '</ul>';
 
   if (errs.length) {
-    $('#mkFb').innerHTML =
+    /* ⭐ 写错了也要当场给地道说法——不能让孩子「改对了才配看母语者怎么说」。
+       顺序：错在哪 → 改好长这样 → 同样的意思欧美人怎么说。 */
+    const fixed = autoFix(s, errs);
+    const fixedOk = (fixed && normSent(fixed) !== normSent(s)) ? fixed : '';
+    const errHtml =
       '<div class="fb bad">这句有 <b>' + errs.length + '</b> 个地方要改：' +
         '<div class="eg" style="margin:8px 0;background:#fff">' + esc(s) + '</div>' +
         list(errs) + (warns.length ? list(warns) : '') +
-        (function () {                       /* 直接把改好的样子给他看，别让他猜 */
-          const fixed = autoFix(s, errs);
-          return (fixed && normSent(fixed) !== normSent(s)) ?
-            '<div style="margin-top:10px;font-size:14px">✍️ <b>改好应该是这样</b>：' +
-            '<div class="eg" style="margin-top:6px;background:#fff">' + esc(fixed) +
-            ' <button class="btn-mini" onclick="speak(' + JSON.stringify(fixed) + ')">🔊</button></div>' +
-            '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">照着改一遍再按「检查」，' +
-            '通过之后我会告诉你：同样的意思，欧美人平常会怎么说。</div></div>' : '';
-        })() +
-      '</div>' +
+        (fixedOk ?
+          '<div style="margin-top:10px;font-size:14px">✍️ <b>改好应该是这样</b>：' +
+          '<div class="eg" style="margin-top:6px;background:#fff">' + esc(fixedOk) +
+          ' <button class="btn-mini" onclick="speak(' + JSON.stringify(fixedOk) + ')">🔊</button></div>' +
+          '<div style="margin-top:6px;font-size:13px;color:#8a7fa8">照着改一遍再按「检查」。' +
+          '下面先看看同样的意思，欧美人平常会怎么说。</div></div>' : '') +
+      '</div>';
+    const btns =
       '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
       '<button class="btn btn-ghost" onclick="makeGiveUp()">这句先跳过（记进错题本）</button>';
+    const natHtml = nativeSuggest(w, s);
+    $('#mkFb').innerHTML = errHtml + natHtml + btns;
+    /* 有 Key 再加一条量身的：拿「改好的句子」去问，AI 才不会被原句的语法错带偏 */
+    if (aiGetKey()) {
+      $('#mkFb').innerHTML = errHtml + natHtml +
+        '<div class="fb tip">⏳ 再让 AI 老师照着你这句，写一句欧美人会说的…</div>' + btns;
+      const r2 = await aiCheckSentence(w.w, fixedOk || s);
+      $('#mkFb').innerHTML = errHtml + natHtml +
+        (r2 && r2.better ? '<div class="fb tip">' + betterHtml(r2) + '</div>' :
+         (r2 && r2.error ? '<div class="fb tip">（' + esc(r2.error) + '，上面的说法仍然有效）</div>' : '')) +
+        btns;
+    }
     return;
   }
   const passHtml =
     '<div class="fb ok">🎉 <b>语法检查通过！</b>拼写、大小写、标点、主谓一致、时态、冠词都没问题。' +
       (warns.length ? '<div style="margin-top:8px">还有一点小提醒（不算错）：</div>' + list(warns) : '') +
     '</div>';
-  const natHtml = nativeBlock(w);
+  const natHtml = collocHtml(s) + nativeBlock(w);
   const acceptBtn = '<button class="btn btn-main" onclick="makeAccept()">收下这一句，写下一句 →</button>';
   if (!aiGetKey()) { $('#mkFb').innerHTML = passHtml + natHtml + acceptBtn; return; }
   /* 有 Key → 再做一层：意思通不通、搭配对不对 */
@@ -1055,25 +1160,19 @@ async function makeCheck() {
       acceptBtn;
     return;
   }
-  const betterHtml = r.better ?
-    '<div style="margin-top:10px;font-size:14px">🌟 <b>同样的意思，欧美人平常会这样说</b>' +
-    '<div class="eg" style="margin-top:6px;background:#fff">' + esc(r.better) +
-      ' <button class="btn-mini" onclick="speak(' + JSON.stringify(r.better) + ')">🔊</button>' +
-      (r.betterZh ? '<br><span style="color:#8a7fa8;font-size:13px">' + esc(r.betterZh) + '</span>' : '') +
-    '</div>' + (r.diff ? '<div style="margin-top:6px;font-size:13.5px">💡 差在哪：' + esc(r.diff) + '</div>' : '') +
-    '</div>' : '';
+  const betterBlk = betterHtml(r);
   const dropNote = r.dropped ?
     '<div style="margin-top:8px;font-size:13px;color:#8a7fa8">（AI 这次给的示范句没通过语法检查，' +
     '已经拦下不显示——宁可少给一句，也不让你记住错的说法。）</div>' : '';
   if (r.ok) {
     $('#mkFb').innerHTML = passHtml + natHtml +
-      '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterHtml + dropNote + '</div>' +
+      '<div class="fb ok">✅ <b>意思也没问题</b>' + (r.tip ? '：' + esc(r.tip) : '') + betterBlk + dropNote + '</div>' +
       acceptBtn;
   } else {
     $('#mkFb').innerHTML = passHtml + natHtml +
       '<div class="fb bad">🤔 <b>语法没错，但意思上有问题</b>' + (r.tip ? '：' + esc(r.tip) : '') +
         (r.fix ? '<div class="eg" style="margin-top:8px;background:#fff">可以这样说：' + esc(r.fix) + '</div>' : '') +
-        betterHtml + dropNote + '</div>' +
+        betterBlk + dropNote + '</div>' +
       '<button class="btn btn-main" onclick="makeCheck()">改好了，再检查一次</button>' +
       '<button class="btn btn-ghost" onclick="makeAccept()">我觉得这句没问题，收下</button>';
   }
