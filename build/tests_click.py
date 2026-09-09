@@ -53,6 +53,9 @@ def main():
             btn('记住了，翻面').click(); pg.wait_for_timeout(200)
             pg.fill('#cdIn', 'zzz'); btn('检查').click(); pg.wait_for_timeout(250)
             ck('拼错判错并给正确拼写', '正确拼写是' in T())
+            ck('拼错给音标', '/' in T())
+            ck('拼错指出差在哪个字母', '差在这里' in T(), T()[-300:])
+            ck('拼错给例句帮助记忆', '看一遍例句再记' in T(), T()[-300:])
             ck('拼错进错题本', pg.evaluate(
                 "JSON.parse(localStorage.getItem('mathquiz_wrongbook_v1')||'[]').some(x=>x.subject==='engword')"))
 

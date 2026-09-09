@@ -738,6 +738,27 @@ function autoFix(sent, issues) {
   out = out.replace(/\s+/g, ' ').replace(/\s+([,.!?])/g, '$1');
   return out;
 }
+/* 拼错时指出差在哪个字母——只说「正确拼写是 excuse」孩子不一定看得出自己少打了 c。
+   逐字母对齐，少打的标绿、多打的标红划掉、打错的标红。 */
+function spellDiff(user, right) {
+  const a = String(user || '').toLowerCase(), b = String(right || '').toLowerCase();
+  if (!a) return '<span style="color:#3e8e5a">' + esc(right) + '</span>';
+  const m = a.length, n = b.length, d = [];
+  for (let i = 0; i <= m; i++) { d.push(new Array(n + 1).fill(0)); d[i][0] = i; }
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = a[i-1] === b[j-1] ? d[i-1][j-1] : 1 + Math.min(d[i-1][j-1], d[i-1][j], d[i][j-1]);
+  let i = m, j = n, out = [];
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { out.unshift(esc(right[j-1])); i--; j--; }
+    else if (i > 0 && j > 0 && d[i][j] === d[i-1][j-1] + 1) {
+      out.unshift('<span style="color:#c0392b;font-weight:700">' + esc(right[j-1]) + '</span>'); i--; j--; }
+    else if (j > 0 && d[i][j] === d[i][j-1] + 1) {
+      out.unshift('<span style="color:#3e8e5a;font-weight:700;text-decoration:underline">' + esc(right[j-1]) + '</span>'); j--; }
+    else { out.unshift('<span style="color:#c0392b;text-decoration:line-through">' + esc(a[i-1]) + '</span>'); i--; }
+  }
+  return out.join('');
+}
 /* ========== 路由 ========== */
 let cur = { unit: null, sec: null, mode: null };
 function goBack() {
@@ -860,7 +881,15 @@ function cardCheck() {
   const ok = normalize(v) === normalize(w.w);
   if (ok) cd.ok++; else addWrong(w, cur.sec, cur.unit, 'card', v);
   $('#cdFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
-    (ok ? '🎉 拼对了！' : '💪 正确拼写是 <b>' + esc(w.w) + '</b>　（你写的是「' + esc(v || '（空）') + '」）<br>这个词已经放进错题本，等下可以再练一次。') +
+    (ok ? '🎉 拼对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
+        : '💪 正确拼写是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) +
+          '<br>你写的是「' + esc(v || '（空）') + '」' +
+          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
+          '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>' +
+          '<br><span style="font-size:12.5px;color:#8a7fa8">这个词已经放进错题本，等下可以再练一次。</span>') +
     '</div><button class="btn btn-main" onclick="cardNext()">下一个 →</button>';
   setProg(cur.sec.id, 'card', cd.i + 1, cur.sec.words.length, cd.ok);
 }
@@ -916,7 +945,11 @@ function recallCheck() {
   if (ok) rc.ok++; else addWrong(w, cur.sec, cur.unit, 'recall', v);
   $('#rcFb').innerHTML = '<div class="fb ' + (ok ? 'ok' : 'bad') + '">' +
     (ok ? '🎉 写对了！<br><span style="font-size:13.5px">' + esc(w.egs[0]) + '</span>'
-        : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>（你写的是「' + esc(v || '（空）') + '」）<br>' +
+        : '💪 应该是 <b>' + esc(w.w) + '</b> ' + esc(w.ipa) + '<br>你写的是「' + esc(v || '（空）') + '」' +
+          '<div class="eg" style="margin-top:6px;background:#fff">差在这里：' + spellDiff(v, w.w) +
+          '<br><span style="font-size:12.5px;color:#8a7fa8">' +
+          '<span style="color:#3e8e5a;text-decoration:underline">绿色下划线</span>＝你漏掉的字母，' +
+          '<span style="color:#c0392b">红色</span>＝写错或多写的</span></div>' +
           '<span style="font-size:13.5px">看一遍例句再记：' + esc(w.egs[0]) + '</span>') +
     '</div><button class="btn btn-main" onclick="recallNext()">下一个 →</button>';
   setProg(cur.sec.id, 'recall', rc.i + 1, cur.sec.words.length, rc.ok);
